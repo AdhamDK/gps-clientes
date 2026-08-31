@@ -161,24 +161,32 @@ function handleClientes(params) {
     HEADERS.forEach(function(h) { idx[h] = headerRow.indexOf(h); });
     var updatedAtIdx = idx['updated_at'] !== -1 ? idx['updated_at'] : 7;
     var clientes = [];
+    var deletedIdx = idx['deleted'] !== -1 ? idx['deleted'] : 9;
     for (var i = 1; i < data.length; i++) {
       var row = data[i];
+      // Filter soft-deleted
+      var delVal = row[deletedIdx];
+      if (delVal === 1 || delVal === '1' || String(delVal).toLowerCase() === 'true') continue;
       var updatedAtStr = row[updatedAtIdx];
-      if (!updatedAtStr) continue;
-      var rowDate;
-      try { rowDate = new Date(updatedAtStr); } catch (err2) { continue; }
-      if (rowDate > lastSyncDate) {
-        var obj = {};
-        HEADERS.forEach(function(h) {
-          var colIdx = idx[h] !== -1 ? idx[h] : -1;
-          if (colIdx !== -1) obj[h] = row[colIdx];
-        });
-        obj.latitud = parseFloat(obj.latitud) || 0;
-        obj.longitud = parseFloat(obj.longitud) || 0;
-        obj.sync_status = parseInt(obj.sync_status) || 0;
-        obj.deleted = parseInt(obj.deleted) || 0;
-        clientes.push(obj);
+      // Allow rows without updated_at (legacy) — include them
+      if (updatedAtStr) {
+        var rowDate;
+        try { rowDate = new Date(updatedAtStr); } catch (err2) { continue; }
+        if (rowDate <= lastSyncDate) continue;
       }
+      var obj = {};
+      HEADERS.forEach(function(h) {
+        var colIdx = idx[h] !== -1 ? idx[h] : -1;
+        if (colIdx !== -1) obj[h] = row[colIdx];
+      });
+      obj.latitud = parseFloat(obj.latitud) || 0;
+      obj.longitud = parseFloat(obj.longitud) || 0;
+      // Also expose lat/lng aliases for frontend compat
+      obj.lat = obj.latitud;
+      obj.lng = obj.longitud;
+      obj.sync_status = parseInt(obj.sync_status) || 0;
+      obj.deleted = parseInt(obj.deleted) || 0;
+      clientes.push(obj);
     }
     // Optional search filter (NFD-insensitive)
     if (search) {

@@ -372,6 +372,19 @@ async function fetchClientes() {
       } else throw gasErr;
     }
     var items = Array.isArray(gasData) ? gasData : (gasData.data || gasData.items || gasData.clientes || []);
+    // Normalize GAS fields (latitud/longitud → lat/lng, rif_cedula → rif) for map/selection compat
+    items = items.map(function(c){
+      if (c.lat == null && c.latitud != null) c.lat = c.latitud;
+      if (c.lng == null && c.longitud != null) c.lng = c.longitud;
+      if (!c.rif && c.rif_cedula) c.rif = c.rif_cedula;
+      if (!c.referencia && c.direccion) c.referencia = c.direccion;
+      if (!c.texto_breve && c.referencia) c.texto_breve = c.referencia;
+      // hide soft-deleted client-side as fallback
+      if (c.deleted === 1 || c.deleted === '1' || String(c.deleted).toLowerCase() === 'true') return null;
+      return c;
+    }).filter(Boolean);
+    // Force has_gps_fix for GAS clients that have lat/lng
+    items.forEach(function(c){ if (c.lat != null && c.lng != null && (c.has_gps_fix == null)) c.has_gps_fix = true; });
     var total = Array.isArray(gasData) ? items.length : (gasData.total != null ? gasData.total : items.length);
     // zona filter client-side when GAS does not support it
     if (zona && items.length) {
