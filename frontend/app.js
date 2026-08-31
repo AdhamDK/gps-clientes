@@ -1,4 +1,4 @@
-/* GPS_CLIENTES Leaflet frontend — vanilla JS (offline-first, El Vigia).
+/* v1.1.11-alpha — GPS_CLIENTES Leaflet frontend — vanilla JS (offline-first, El Vigia).
  * Single bundle for browser and Android WebView (https://appassets.androidplatform.net).
  * Pagination: PAGINACION_LIMITE = 500. Backend caps limit at 500 (GET /clientes?limit=500, le=500).
  * Frontend requests 500 to cover fixture 409 without infinite scroll. If total > 500
@@ -36,6 +36,10 @@ const selectionManager=new SelectionManager(selectedIds);
 const Log=SelectionManager.Log;
 const SyncQueue=typeof GPSSyncQueue!=='undefined'?GPSSyncQueue:null;
 let markersMode=null; // 'selection' | 'route' | 'pending' — lets refreshMapMarkers do incremental updates
+// v1.1.11-alpha: dropup for marking subset of pending as delivered
+let pendingDropupIds = new Set();
+let _pendingDropupRows = [];
+let _pendingDropupClients = [];
 // Virtual scrolling / dynamic pagination for the client list (avoid rendering 500+ DOM nodes at once).
 let _listCards=[],_listCount=0,_listStep=120,_listObserver=null,_listSentinel=null;
 function getVisibleClientes(){
@@ -68,6 +72,127 @@ function handlePositionError(err){locating=false;if(locateTimeout){clearTimeout(
 function _doLocate(){watchId=navigator.geolocation.watchPosition(handlePosition,handlePositionError,{enableHighAccuracy:true,timeout:10000,maximumAge:0});if(cachedFix){if(locateTimeout){clearTimeout(locateTimeout);locateTimeout=null;}locating=false;_clearWatch();updateMyLocationOnMap(cachedFix.lat,cachedFix.lng,cachedFix.accuracy);if(map)map.setView([cachedFix.lat,cachedFix.lng],16);toast('Ubicación centrada ✓');}}
 function centrarEnMiUbicacion(){if(!navigator.geolocation){toast('Geolocalización no soportada');return;}if(locating)return;locating=true;toast('Ubicando...',1500);locateTimeout=setTimeout(()=>{if(locating){locating=false;_clearWatch();handlePositionError({code:3});}},10000);_clearWatch();if(navigator.permissions&&navigator.permissions.query){try{navigator.permissions.query({name:'geolocation'}).then(function(status){permissionStatus=status;try{status.onchange=function(){if(status.state==='granted'){permissionDenied=false;}};}catch(e){Log.error('[GPS]',e)}if(status.state==='denied'){permissionDenied=true;toast('Permiso denegado — abre Configuración del navegador y otorga ubicación, luego toca de nuevo',4000);locating=false;if(locateTimeout){clearTimeout(locateTimeout);locateTimeout=null;}_clearWatch();return;}_doLocate();}).catch(function(){_doLocate();});return;}catch(e){Log.error('[GPS]',e)}}_doLocate();}
 function updateSelectionUI(){const n=selectedIds.size;if(els.selectionBadge)els.selectionBadge.style.display=n>0?'inline-block':'none',n&&(els.selectionBadge.textContent=n+' seleccionados');if(els.miniMenu&&els.miniMenuCount){if(n>0){els.miniMenuCount.textContent=n+' seleccionados';els.miniMenu.style.display='flex';}else els.miniMenu.style.display='none';}}
+// v1.1.11-alpha: dropup helpers — shows pending clients (nombre only), 4 visible rows + scroll, tap toggles green
+function _getDropupClients(){
+  if(_pendingDropupClients && _pendingDropupClients.length) return _pendingDropupClients;
+  if(_pendingDropupRows && _pendingDropupRows.length){
+    var mapped = _pendingDropupRows.map(function(r){
+      var c = r.cliente || clientesCache.find(function(x){ return String(x.id)===String(r.cliente_id); });
+      return c || null;
+    }).filter(Boolean);
+    if(mapped.length) return mapped;
+  }
+  // fallback: selectedIds ordered via clientesCache
+  return clientesCache.filter(function(c){ return selectedIds.has(String(c.id)); });
+}
+function _updateDropupCacheFromPending(pending){
+  _pendingDropupRows = Array.isArray(pending) ? pending.slice() : [];
+  _pendingDropupClients = _pendingDropupRows.map(function(r){
+    var c = r.cliente || clientesCache.find(function(x){ return String(x.id)===String(r.cliente_id); });
+    return c || null;
+  }).filter(Boolean);
+  // prune pendingDropupIds that are no longer pending
+  if(pendingDropupIds.size){
+    var stillPending = new Set(_pendingDropupClients.map(function(c){ return String(c.id); }));
+    // if pending list exists, keep only those still pending; if empty, keep fallback ids as-is
+    if(stillPending.size){
+      pendingDropupIds.forEach(function(id){ if(!stillPending.has(String(id))) pendingDropupIds.delete(String(id)); });
+    }
+  }
+}
+function renderDropup(){
+  if(!els.pendingDropup) return;
+  var clients = _getDropupClients();
+  els.pendingDropup.innerHTML = '';
+  if(!clients.length){
+    var empty = document.createElement('div');
+    empty.className = 'pending-dropup-empty';
+    empty.textContent = 'Sin pendientes';
+    els.pendingDropup.appendChild(empty);
+  } else {
+    clients.forEach(function(c){
+      var row = document.createElement('div');
+      var sel = pendingDropupIds.has(String(c.id));
+      row.className = 'pending-dropup-row' + (sel ? ' selected' : '');
+      row.setAttribute('role', 'option');
+      row.setAttribute('aria-selected', sel ? 'true' : 'false');
+      row.setAttribute('tabindex', '0');
+      row.dataset.id = String(c.id);
+      row.textContent = c.nombre || ('Cliente #' + c.id);
+      row.addEventListener('click', function(e){ e.stopPropagation(); toggleDropupRow(String(c.id)); });
+      row.addEventListener('keydown', function(e){
+        if(e.key==='Enter' || e.key===' '){ e.preventDefault(); toggleDropupRow(String(c.id)); }
+      });
+      els.pendingDropup.appendChild(row);
+    });
+  }
+  if(els.btnConfirmDropup) els.btnConfirmDropup.disabled = pendingDropupIds.size===0;
+}
+function toggleDropupRow(id){
+  var sid = String(id);
+  if(pendingDropupIds.has(sid)) pendingDropupIds.delete(sid);
+  else pendingDropupIds.add(sid);
+  renderDropup();
+  // focus row for keyboard continuity
+  if(els.pendingDropup){
+    var row = els.pendingDropup.querySelector('[data-id="'+sid.replace(/"/g,'\\"')+'"]');
+    if(row) row.focus();
+  }
+}
+function _isDropupOpen(){ return !!(els.pendingDropupContainer && !els.pendingDropupContainer.hidden); }
+function showDropup(){
+  if(!els.pendingDropupContainer || !els.btnDropupEntregados) return;
+  renderDropup();
+  els.pendingDropupContainer.hidden = false;
+  els.btnDropupEntregados.setAttribute('aria-expanded','true');
+}
+function hideDropup(){
+  if(!els.pendingDropupContainer || !els.btnDropupEntregados) return;
+  els.pendingDropupContainer.hidden = true;
+  els.btnDropupEntregados.setAttribute('aria-expanded','false');
+}
+function toggleDropup(){
+  if(_isDropupOpen()) hideDropup();
+  else showDropup();
+}
+async function handleConfirmDropupEntregados(){
+  var ids = [...pendingDropupIds].map(function(id){ return String(id); });
+  if(!ids.length){ toast('Selecciona al menos un cliente'); return; }
+  var fechaHoy = (new Date()).toISOString().slice(0,10);
+  var clearLocalFlags = function(){ ids.forEach(function(id){ var c=clientesCache.find(function(x){ return String(x.id)===String(id); }); if(c) c.entregado_local=false; }); };
+  // disable confirm while processing
+  if(els.btnConfirmDropup) els.btnConfirmDropup.disabled = true;
+  try{
+    await gasFetch('entregado', {cliente_ids: ids, fecha: fechaHoy}, 'POST');
+    ids.forEach(function(id){ selectionManager.remove(id); });
+    clearLocalFlags();
+    document.querySelectorAll('#listaClientes input[type="checkbox"]').forEach(function(cb){ if(ids.includes(String(cb.value))) cb.checked=false; });
+    pendingDropupIds.clear();
+    updateSelectionUI();
+    toast('Marcados entregados: ' + ids.length + ' ✓');
+    await refreshPendingView();
+    if(_pendingDropupClients.length===0) hideDropup(); else renderDropup();
+  }catch(e){
+    var msg = String(e && e.message || e);
+    var isOffline = !navigator.onLine || msg.includes('Failed to fetch') || msg.includes('Network') || msg.includes('GAS') || msg.includes('Offline');
+    if(isOffline){
+      if(SyncQueue) SyncQueue.enqueue(ids); else { var q=_queueGet(); q.push({ids:ids,ts:Date.now()}); _queueSave(q); }
+      _queueRegisterSync();
+      if(SyncQueue) SyncQueue.markEntregadoLocal(clientesCache, ids);
+      ids.forEach(function(id){ selectionManager.remove(id); });
+      pendingDropupIds.clear();
+      updateSelectionUI();
+      renderClientes(clientesCache);
+      renderDropup();
+      toast('Sin conexión — entregados en cola (BackgroundSync)');
+      try{ await refreshPendingView(); }catch(ee){ Log.error('[GPS] refresh after offline dropup', ee); }
+      if(_pendingDropupClients.length===0) hideDropup();
+    } else {
+      toast('Error marcar entregado: ' + e.message);
+      if(els.btnConfirmDropup) els.btnConfirmDropup.disabled = pendingDropupIds.size===0;
+    }
+  }
+}
 function toggleSelection(id){selectionManager.toggle(id);updateSelectionUI();refreshMapMarkers();}
 function clearSelection(){selectionManager.clear();document.querySelectorAll('#listaClientes input[type="checkbox"]').forEach(cb=>cb.checked=false);updateSelectionUI();refreshMapMarkers();}
 // Cola offline de entregados (localStorage key 'queue_entregado') centralizada en js/syncQueue.js.
@@ -90,7 +215,7 @@ async function loadSnapshot(){try{if(window.localforage){const d=await localfora
 function updateOfflineBanner(reachable){const offline=(typeof reachable==='boolean')?!reachable:!navigator.onLine;if(els.offlineBanner)els.offlineBanner.hidden=!offline;}
 async function handleMarcarEntregados(){var ids=[...selectedIds].map(function(id){return String(id);});if(!ids.length){ids=[...document.querySelectorAll('#listaClientes input[type="checkbox"]:checked')].map(function(cb){return String(cb.value);});}if(!ids.length){toast('Selecciona clientes para marcar');return;}var fechaHoy = (new Date()).toISOString().slice(0,10);var clearLocalFlags=function(){ids.forEach(function(id){var c=clientesCache.find(function(x){return String(x.id)===String(id);});if(c)c.entregado_local=false;});};try{await gasFetch('entregado', {cliente_ids: ids, fecha: fechaHoy}, 'POST');ids.forEach(function(id){ selectionManager.remove(id); });clearLocalFlags();document.querySelectorAll('#listaClientes input[type="checkbox"]').forEach(function(cb){if(ids.includes(String(cb.value)))cb.checked=false;});updateSelectionUI();toast('Marcados entregados: ' + ids.length + ' \u2713');await refreshPendingView();}catch(e){if(!navigator.onLine||(e&&e.message&&e.message.includes('Failed to fetch'))|| String(e.message).includes('GAS')|| String(e.message).includes('Network')){if(SyncQueue)SyncQueue.enqueue(ids);else{var q=_queueGet();q.push({ids:ids,ts:Date.now()});_queueSave(q);} _queueRegisterSync();if(SyncQueue)SyncQueue.markEntregadoLocal(clientesCache,ids);ids.forEach(function(id){ selectionManager.remove(id); });updateSelectionUI();renderClientes(clientesCache);toast('Sin conexi\u00f3n \u2014 entregados en cola (BackgroundSync)');}else toast('Error marcar entregado: ' + e.message);}}
 async function marcarEntregados(){ return handleMarcarEntregados(); }
-async function refreshPendingView(){try{var fechaHoy3=(new Date()).toISOString().slice(0,10);var gasPending=await gasFetch('rutas_hoy', {fecha: fechaHoy3, entregado: 'false'}, 'GET');var pending=(gasPending.rutas||gasPending.data||gasPending||[]).filter(function(r){return !r.entregado;});var pendingIds=new Set(pending.map(function(r){return r.cliente_id;}));if(routeLayer){try{map.removeLayer(routeLayer);}catch(e){Log.error('[GPS]',e)}routeLayer=null;}if(!pending.length){els.rutaPanel.style.display='none';els.listaRuta.innerHTML='';els.rutaStats.textContent='Sin pendientes — lista terminable';clearMarkers();if(routeLayer){try{map.removeLayer(routeLayer);}catch(e){Log.error('[GPS]',e)}routeLayer=null;}return;}const coords=pending.map(r=>{const c=r.cliente;return c&&c.lat!=null?[c.lng,c.lat]:null}).filter(Boolean);if(coords.length>1){const geom=coords.map(c=>[c[1],c[0]]);routeLayer=L.polyline(geom,{color:'#FC4C02',weight:5,opacity:0.9}).addTo(map);try{map.fitBounds(routeLayer.getBounds(),{padding:[32,32]});}catch(e){Log.error('[GPS]',e)}}els.rutaPanel.style.display='block';els.listaRuta.innerHTML='';pending.forEach((r,i)=>{const c=r.cliente||{};const li=document.createElement('li');li.innerHTML=`<b>${i+1}.</b> ${escapeHtml(c.nombre||'Cliente #'+r.cliente_id)} <small style="color:#6B7280">— ${escapeHtml(c.texto_breve||'')}</small>`;els.listaRuta.appendChild(li);});els.rutaStats.textContent=`Pendientes: ${pending.length}`;await renderPendingMarkers(pending);}catch(e){Log.error('refreshPendingView',e);await fetchClientes();}}
+async function refreshPendingView(){try{var fechaHoy3=(new Date()).toISOString().slice(0,10);var gasPending=await gasFetch('rutas_hoy', {fecha: fechaHoy3, entregado: 'false'}, 'GET');var pending=(gasPending.rutas||gasPending.data||gasPending||[]).filter(function(r){return !r.entregado;});var pendingIds=new Set(pending.map(function(r){return r.cliente_id;}));_updateDropupCacheFromPending(pending);if(_isDropupOpen()) renderDropup();if(routeLayer){try{map.removeLayer(routeLayer);}catch(e){Log.error('[GPS]',e)}routeLayer=null;}if(!pending.length){els.rutaPanel.style.display='none';els.listaRuta.innerHTML='';els.rutaStats.textContent='Sin pendientes — lista terminable';clearMarkers();if(routeLayer){try{map.removeLayer(routeLayer);}catch(e){Log.error('[GPS]',e)}routeLayer=null;}if(!_pendingDropupClients.length) hideDropup(); else if(_isDropupOpen()) renderDropup();return;}const coords=pending.map(r=>{const c=r.cliente;return c&&c.lat!=null?[c.lng,c.lat]:null}).filter(Boolean);if(coords.length>1){const geom=coords.map(c=>[c[1],c[0]]);routeLayer=L.polyline(geom,{color:'#FC4C02',weight:5,opacity:0.9}).addTo(map);try{map.fitBounds(routeLayer.getBounds(),{padding:[32,32]});}catch(e){Log.error('[GPS]',e)}}els.rutaPanel.style.display='block';els.listaRuta.innerHTML='';pending.forEach((r,i)=>{const c=r.cliente||{};const li=document.createElement('li');li.innerHTML=`<b>${i+1}.</b> ${escapeHtml(c.nombre||'Cliente #'+r.cliente_id)} <small style="color:#6B7280">— ${escapeHtml(c.texto_breve||'')}</small>`;els.listaRuta.appendChild(li);});els.rutaStats.textContent=`Pendientes: ${pending.length}`;await renderPendingMarkers(pending);if(_isDropupOpen()) renderDropup();}catch(e){Log.error('refreshPendingView',e);await fetchClientes();}}
 async function renderPendingMarkers(pendingRows){const pendingSet=new Set(pendingRows.map(r=>String(r.cliente_id)));const visible=clientesCache.filter(c=>pendingSet.has(String(c.id))&&c.has_gps_fix!==false&&c.lat!=null);clearMarkers();markersMode='pending';if(!visible.length)return;const useCluster=typeof L!=='undefined'&&typeof L.markerClusterGroup==='function';if(useCluster)markerCluster=L.markerClusterGroup({maxClusterRadius:40,showCoverageOnHover:false,spiderfyOnMaxZoom:true,spiderfyDistanceMultiplier:1.2,disableClusteringAtZoom:18,iconCreateFunction:createClusterIcon});let n=0;const bounds=[];visible.forEach(c=>{n+=1;const m=L.marker([c.lat,c.lng],{icon:createNumberedIcon(n)}).bindPopup(`<b>${escapeHtml(c.nombre)}</b><br/>${escapeHtml(c.texto_breve||'')}`);markers.push({id:c.id,marker:m});if(markerCluster)markerCluster.addLayer(m);else m.addTo(map);bounds.push([c.lat,c.lng]);});if(visible.length>1){const latlngs=visible.map(c=>[c.lat,c.lng]);if(routeLayer){try{map.removeLayer(routeLayer);}catch(e){Log.error('[GPS]',e)}routeLayer=null;}routeLayer=L.polyline(latlngs,{color:'#FC4C02',weight:5,opacity:0.9}).addTo(map);}if(markerCluster&&markers.length)map.addLayer(markerCluster);if(bounds.length>1)map.fitBounds(bounds,{padding:[24,24],maxZoom:15});else if(bounds.length===1)map.setView(bounds[0],15);}
 async function handleTerminarLista(){
   try{
@@ -232,6 +357,10 @@ function initEls() {
   els.btnMiniOptimizar=document.getElementById('btnMiniOptimizar');
   els.btnMiniMarcar=document.getElementById('btnMiniMarcar');
   els.btnMiniTerminar=document.getElementById('btnMiniTerminar');
+  els.pendingDropupContainer=document.getElementById('pendingDropupContainer');
+  els.pendingDropup=document.getElementById('pendingDropup');
+  els.btnDropupEntregados=document.getElementById('btnDropupEntregados');
+  els.btnConfirmDropup=document.getElementById('btnConfirmDropup');
   els.modalOverlay = document.getElementById('modalOverlay');
   els.modalTitle = document.getElementById('modalTitle');
   els.confirmOverlay = document.getElementById('confirmOverlay');
@@ -946,11 +1075,28 @@ document.addEventListener('DOMContentLoaded', () => {
   if(els.btnMiniOptimizar)els.btnMiniOptimizar.addEventListener('click',handleOptimizar);
   if(els.btnMiniMarcar)els.btnMiniMarcar.addEventListener('click',handleMarcarEntregados);
   if(els.btnMiniTerminar)els.btnMiniTerminar.addEventListener('click',handleTerminarLista);
+  // v1.1.11-alpha: dropup entregados subset
+  if(els.btnDropupEntregados) els.btnDropupEntregados.addEventListener('click', function(e){ e.stopPropagation(); toggleDropup(); });
+  if(els.btnConfirmDropup) els.btnConfirmDropup.addEventListener('click', function(e){ e.stopPropagation(); handleConfirmDropupEntregados(); });
+  if(els.pendingDropup){
+    els.pendingDropup.addEventListener('keydown', function(e){
+      var items=[...els.pendingDropup.querySelectorAll('.pending-dropup-row')];
+      var idx=items.indexOf(document.activeElement);
+      if(e.key==='ArrowDown'){ e.preventDefault(); items[(idx+1)%items.length].focus(); }
+      else if(e.key==='ArrowUp'){ e.preventDefault(); items[(idx-1+items.length)%items.length].focus(); }
+      else if(e.key==='Escape'){ e.preventDefault(); hideDropup(); if(els.btnDropupEntregados) els.btnDropupEntregados.focus(); }
+    });
+  }
+  document.addEventListener('click', function(e){
+    if(_isDropupOpen() && els.pendingDropupContainer && !els.pendingDropupContainer.contains(e.target) && els.btnDropupEntregados && !els.btnDropupEntregados.contains(e.target)){
+      hideDropup();
+    }
+  });
   window.addEventListener('online',function(){updateOfflineBanner();_syncQueuedEntregados();});
   window.addEventListener('offline',updateOfflineBanner);
   updateOfflineBanner();
   // Centralized selection → UI counter + map sync (persisted via selectionManager across reloads)
-  selectionManager.subscribe(() => { updateSelectionUI(); refreshMapMarkers(); });
+  selectionManager.subscribe(() => { updateSelectionUI(); refreshMapMarkers(); if(_isDropupOpen()) renderDropup(); });
   updateSelectionUI();
   // Real backend connectivity heartbeat (offline-first): not just navigator.onLine.
   if (typeof window !== 'undefined' && window.GPS_syncEngine && typeof window.GPS_syncEngine.startHeartbeat === 'function') {
@@ -959,6 +1105,6 @@ document.addEventListener('DOMContentLoaded', () => {
   _syncQueuedEntregados();
   if('serviceWorker' in navigator&&'SyncManager' in window){navigator.serviceWorker.addEventListener('message',function(e){if(e.data&&e.data.type==='SYNC_COMPLETED')toast('Cola sincronizada ✓');});}
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') { hideForm(); hideConfirmDelete(); _closeDropdown(true); _closeActionsDropdown(true); _closeClientes(true); }
+    if (e.key === 'Escape') { hideForm(); hideConfirmDelete(); _closeDropdown(true); _closeActionsDropdown(true); _closeClientes(true); if(_isDropupOpen()){ hideDropup(); if(els.btnDropupEntregados) els.btnDropupEntregados.focus(); } }
   });
 });

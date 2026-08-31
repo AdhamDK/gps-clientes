@@ -3,9 +3,10 @@
  * GAS API -> networkFirst, tiles/static -> cacheFirst
  * BackgroundSync: gps-gas-sync (clientes) and gps-local-queue (entregado)
  */
+// v1.1.11-alpha
 var CACHES = {
-  STATIC: 'gps-static-v6',
-  GAS_API: 'gps-gas-api-v6',
+  STATIC: 'gps-static-v7',
+  GAS_API: 'gps-gas-api-v7',
   TILES: 'gps-tiles-v1'
 };
 var GAS_ORIGIN = 'https://script.google.com';

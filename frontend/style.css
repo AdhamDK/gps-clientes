@@ -345,9 +345,9 @@ html[data-theme] body, html[data-theme] .header, html[data-theme] .sidebar, html
 .panel-toggles .btn{flex:1;text-align:left;border:1px solid var(--border);background:var(--card, var(--surface))}
 #actionsMenu[hidden]{display:none !important}
 #clientesMenu[hidden]{display:none !important}
-.mini-menu{position:fixed;bottom:0;left:360px;right:0;background:var(--surface);border-top:2px solid var(--strava);padding:8px 12px; /* fix barra: padding reducido evita ancho > viewport */display:flex;align-items:center;justify-content:space-between;gap:8px; /* fix barra */z-index:900;box-shadow:0 -4px 16px rgba(0,0,0,.08);overflow-x:auto;overflow-y:hidden; /* fix barra: scroll horizontal evita corte Optimizar */scrollbar-width:none; /* fix barra */-webkit-overflow-scrolling:touch;box-sizing:border-box; /* fix barra */max-width:calc(100vw - 360px); /* fix barra: evita overflow 612px>360dp */flex-wrap:nowrap; /* fix barra */}
+.mini-menu{position:fixed;bottom:0;left:360px;right:0;background:var(--surface);border-top:2px solid var(--strava);padding:8px 12px; /* fix barra: padding reducido evita ancho > viewport */display:flex;align-items:center;justify-content:space-between;gap:8px; /* fix barra */z-index:900;box-shadow:0 -4px 16px rgba(0,0,0,.08);overflow-x:auto;overflow-y:visible; /* v1.1.11-alpha: visible for dropup — was hidden */scrollbar-width:none; /* fix barra */-webkit-overflow-scrolling:touch;box-sizing:border-box; /* fix barra */max-width:calc(100vw - 360px); /* fix barra: evita overflow 612px>360dp */flex-wrap:nowrap; /* fix barra */}
 .mini-menu::-webkit-scrollbar{ display:none; /* fix barra */ }
-.mini-menu-actions{display:flex;gap:6px; /* fix barra */align-items:center;overflow-x:auto;overflow-y:hidden; /* fix barra */scrollbar-width:none; /* fix barra */flex-wrap:nowrap; /* fix barra: scroll no wrap vertical */-webkit-overflow-scrolling:touch;flex:1; /* fix barra */min-width:0; /* fix barra */}
+.mini-menu-actions{display:flex;gap:6px; /* fix barra */align-items:center;overflow-x:auto;overflow-y:visible; /* v1.1.11-alpha: visible for dropup */scrollbar-width:none; /* fix barra */flex-wrap:nowrap; /* fix barra: scroll no wrap vertical */-webkit-overflow-scrolling:touch;flex:1; /* fix barra */min-width:0; /* fix barra */}
 .mini-menu-actions::-webkit-scrollbar{ display:none; /* fix barra */ }
 #miniMenuCount{font-size:13px;font-weight:700;color:var(--text);flex-shrink:0; /* fix barra */white-space:nowrap; /* fix barra */}
 /* fix barra: botones no truncados, no se encogen */
@@ -369,12 +369,78 @@ div:has(> a[href*="netlify"]) { display:none !important; }
 /* v1.1.10: ensure mini-menu not clipped on mobile 360dp + safe area */
 .mini-menu { padding-bottom: max(8px, env(safe-area-inset-bottom, 0px)); }
 
+/* v1.1.11-alpha: dropup for marking delivered subset — 4 visible rows + scroll, green selected, confirm button */
+.pending-dropup-container {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 12px;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-end;
+  gap: 8px;
+  z-index: 901;
+  max-width: calc(100vw - 24px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  transition: opacity .15s ease, transform .15s ease;
+}
+.pending-dropup-container[hidden] { display: none !important; }
+.pending-dropup {
+  width: 220px;
+  max-height: 160px;
+  overflow-y: auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.18);
+  padding: 4px;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+.pending-dropup-row {
+  padding: 8px 10px;
+  font-size: 13px;
+  line-height: 1.2;
+  border-radius: 6px;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: background .12s ease, color .12s ease;
+}
+.pending-dropup-row:hover { background: var(--bg); }
+.pending-dropup-row:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; }
+.pending-dropup-row.selected {
+  background: #10B981;
+  background: var(--success);
+  color: #fff;
+  font-weight: 600;
+}
+.pending-dropup-row.selected:hover { background: #0E9F6E; }
+.pending-dropup-confirm {
+  min-width: 36px;
+  height: 36px;
+  padding: 0 10px;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+.pending-dropup-confirm:disabled { opacity: .5; cursor: not-allowed; }
+.pending-dropup-empty {
+  font-size: 12px;
+  color: var(--muted);
+  padding: 10px;
+  text-align: center;
+}
+
 /* Responsive */
 @media (max-width: 900px) {
   .layout { flex-direction: column; padding-bottom: 72px; /* v1.1.10: +16 for badge safe */ }
   .sidebar { width: 100%; min-width: 0; max-height: none; }
   #map { min-height: 360px; height: calc(100dvh - 61px - 72px); /* v1.1.10 */ }
-  .mini-menu { left: 0; right: 0; width:100%; max-width:100vw; margin:0; box-sizing:border-box; overflow-x:auto; overflow-y:hidden; scrollbar-width:none; /* fix barra: mobile sin left360 ni calc(100% -360) */ bottom: env(safe-area-inset-bottom, 0px); }
+  .mini-menu { left: 0; right: 0; width:100%; max-width:100vw; margin:0; box-sizing:border-box; overflow-x:auto; overflow-y:visible; scrollbar-width:none; /* v1.1.11-alpha: visible for dropup */ bottom: env(safe-area-inset-bottom, 0px); }
   #clientesMenu { max-height: 58vh; }
   #listaClientes { max-height: 42vh; }
+  .pending-dropup { width: 180px; }
+  .pending-dropup-container { left: 8px; }
 }

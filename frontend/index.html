@@ -104,8 +104,13 @@
     </div>
 
   <div id="miniMenu" class="mini-menu" role="toolbar" aria-label="Acciones selección"><!-- fix visual 3: panel inferior siempre visible -->
+    <div id="pendingDropupContainer" class="pending-dropup-container" hidden>
+      <div id="pendingDropup" class="pending-dropup" role="listbox" aria-multiselectable="true" aria-label="Clientes pendientes para marcar entregados"></div>
+      <button id="btnConfirmDropup" class="btn btn-primary btn-sm pending-dropup-confirm" disabled aria-label="Confirmar entregados seleccionados">✓</button>
+    </div>
     <span id="miniMenuCount">0 seleccionados</span>
     <div class="mini-menu-actions">
+      <button id="btnDropupEntregados" class="btn btn-secondary" aria-haspopup="listbox" aria-expanded="false" aria-controls="pendingDropup" title="Seleccionar entregados">☰ Entregados</button>
       <button id="btnMiniMarcar" class="btn btn-secondary">Marcar entregados</button>
       <button id="btnMiniTerminar" class="btn btn-ghost">Terminar lista</button>
       <button id="btnMiniClear" class="btn btn-ghost">Limpiar</button>
@@ -183,7 +188,7 @@
   <script src="./js/syncQueue.js"></script>
   <script type="module" src="./app.js"></script>
   <script>if('serviceWorker' in navigator){navigator.serviceWorker.register('./sw.js').catch(function(e){console.warn('SW register fail',e);});}</script>
-  <script>// v1.1.10: hide Netlify "Powered by Netlify" pill that was covering Optimizar button on mobile
+  <script>// v1.1.11-alpha: hide Netlify "Powered by Netlify" pill that was covering Optimizar button on mobile (kept from v1.1.10)
   (function(){function hideBadge(){try{var els=document.querySelectorAll('a,div,span,iframe');for(var i=0;i<els.length;i++){var el=els[i];var t=(el.textContent||'').toLowerCase();if(t.indexOf('powered by netlify')!==-1){var p=el;for(var d=0;d<3&&p;d++){try{p.style.display='none';p.style.visibility='hidden';p.style.pointerEvents='none';}catch(e){} p=p.parentElement; } el.style.display='none';} var href=el.getAttribute&&el.getAttribute('href'); if(href&&href.indexOf('netlify')!==-1 && el.textContent&&el.textContent.length<40){ el.style.display='none'; }}}catch(e){}} hideBadge(); setTimeout(hideBadge,500); setTimeout(hideBadge,2000); if(window.MutationObserver){var obs=new MutationObserver(function(){hideBadge();}); try{obs.observe(document.body,{childList:true,subtree:true});}catch(e){}} })();</script>
 </body>
 </html>
