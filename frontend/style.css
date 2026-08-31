@@ -371,19 +371,23 @@ div:has(> a[href*="netlify"]) { display:none !important; }
 
 /* v1.1.11-alpha: dropup for marking delivered subset — 4 visible rows + scroll, green selected, confirm button */
 .pending-dropup-container {
-  position: absolute;
-  bottom: calc(100% + 8px);
-  left: 12px;
+  position: fixed;
+  bottom: 64px;
+  left: 370px;
   display: flex;
   flex-direction: row;
   align-items: flex-end;
   gap: 8px;
-  z-index: 901;
+  z-index: 9999;
   max-width: calc(100vw - 24px);
   padding-bottom: env(safe-area-inset-bottom, 0px);
   transition: opacity .15s ease, transform .15s ease;
+  pointer-events: auto;
 }
 .pending-dropup-container[hidden] { display: none !important; }
+@media (max-width: 900px) {
+  .pending-dropup-container { left: 8px; right: auto; bottom: 76px; }
+}
 .pending-dropup {
   width: 220px;
   max-height: 160px;

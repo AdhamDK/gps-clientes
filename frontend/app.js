@@ -144,12 +144,16 @@ function showDropup(){
   if(!els.pendingDropupContainer || !els.btnDropupEntregados) return;
   renderDropup();
   els.pendingDropupContainer.hidden = false;
+  els.pendingDropupContainer.style.display = 'flex';
   els.btnDropupEntregados.setAttribute('aria-expanded','true');
+  try { console.log('[GPS] dropup open', _getDropupClients().length, pendingDropupIds.size); } catch(e){}
 }
 function hideDropup(){
   if(!els.pendingDropupContainer || !els.btnDropupEntregados) return;
   els.pendingDropupContainer.hidden = true;
+  els.pendingDropupContainer.style.display = '';
   els.btnDropupEntregados.setAttribute('aria-expanded','false');
+  try { console.log('[GPS] dropup closed'); } catch(e){}
 }
 function toggleDropup(){
   if(_isDropupOpen()) hideDropup();

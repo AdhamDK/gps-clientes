@@ -5,8 +5,8 @@
  */
 // v1.1.11-alpha
 var CACHES = {
-  STATIC: 'gps-static-v7',
-  GAS_API: 'gps-gas-api-v7',
+  STATIC: 'gps-static-v8',
+  GAS_API: 'gps-gas-api-v8',
   TILES: 'gps-tiles-v1'
 };
 var GAS_ORIGIN = 'https://script.google.com';
