@@ -298,12 +298,14 @@ function showEditForm(cliente) {
 }
 
 function hideForm() {
+  try { if (document.activeElement && els.modalOverlay.contains(document.activeElement)) document.activeElement.blur(); } catch(e){}
   els.modalOverlay.classList.remove('open');
   els.modalOverlay.setAttribute('aria-hidden', 'true');
   els.formCliente.reset();
   pendingLatLng = null;
   editingClienteId = null;
   if (els.modalTitle) els.modalTitle.textContent = 'Agregar Cliente';
+  try { if (els.btnAgregar) els.btnAgregar.focus(); } catch(e){}
 }
 
 function showConfirmDelete(cliente) {
@@ -316,6 +318,7 @@ function showConfirmDelete(cliente) {
 }
 
 function hideConfirmDelete() {
+  try { if (document.activeElement && els.confirmOverlay.contains(document.activeElement)) document.activeElement.blur(); } catch(e){}
   if (els.confirmOverlay) {
     els.confirmOverlay.classList.remove('open');
     els.confirmOverlay.setAttribute('aria-hidden', 'true');
