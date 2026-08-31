@@ -7,11 +7,12 @@ export async function gasFetch(action, payload, method) {
   method = method || 'GET';
   var url = new URL(CONFIG.GAS_URL);
   url.searchParams.set('action', action);
-  var opts = { method: method, headers: { 'Content-Type': 'application/json' } };
+  // Use text/plain to avoid CORS preflight (OPTIONS) which GAS web app doesn't handle
+  var opts = { method: method, headers: {} };
   if (method === 'GET') {
-    // payload -> query params
     for (var k in payload) if (payload.hasOwnProperty(k) && payload[k] != null) url.searchParams.set(k, String(payload[k]));
   } else {
+    opts.headers['Content-Type'] = 'text/plain;charset=utf-8';
     opts.body = JSON.stringify(payload);
   }
   var res = await fetch(url.toString(), opts);
