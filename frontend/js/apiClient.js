@@ -47,29 +47,35 @@ export async function localFetch(endpoint, payload, method) {
 
 async function fetchOSRMGeometry(ordered, clientsMap) {
   if (!ordered || ordered.length < 2 || !clientsMap) return null;
-  try {
-    var coords = ordered.map(function(id){
-      var c = clientsMap[id];
-      var lat = c.lat != null ? c.lat : c.latitud;
-      var lng = c.lng != null ? c.lng : c.longitud;
-      return lng + ',' + lat;
-    }).join(';');
-    // Public OSRM demo server (HTTPS) - overview=full + geojson for road-following polyline
-    var url = 'https://router.project-osrm.org/route/v1/driving/' + coords + '?overview=full&geometries=geojson';
-    var controller = (typeof AbortController !== 'undefined') ? new AbortController() : null;
-    var timer = null;
-    if (controller) timer = setTimeout(function(){ try{ controller.abort(); }catch(e){} }, 8000);
-    var res = await fetch(url, controller ? { signal: controller.signal } : {});
-    if (timer) clearTimeout(timer);
-    if (!res.ok) return null;
-    var j = await res.json();
-    if (j.code !== 'Ok' || !j.routes || !j.routes[0]) return null;
-    var r = j.routes[0];
-    return { geometry: r.geometry, distance: r.distance, duration: r.duration };
-  } catch (e) {
-    try { console.warn('OSRM public failed', e.message || e); } catch(e2){}
-    return null;
+  var coords = ordered.map(function(id){
+    var c = clientsMap[id];
+    var lat = c.lat != null ? c.lat : c.latitud;
+    var lng = c.lng != null ? c.lng : c.longitud;
+    return lng + ',' + lat;
+  }).join(';');
+  var endpoints = [
+    'https://router.project-osrm.org/route/v1/driving/' + coords + '?overview=full&geometries=geojson',
+    'https://routing.openstreetmap.de/routed-car/route/v1/driving/' + coords + '?overview=full&geometries=geojson'
+  ];
+  for (var ei = 0; ei < endpoints.length; ei++) {
+    try {
+      var url = endpoints[ei];
+      var controller = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+      var timer = null;
+      if (controller) timer = setTimeout(function(){ try{ controller.abort(); }catch(e){} }, 8000);
+      var res = await fetch(url, controller ? { signal: controller.signal } : {});
+      if (timer) clearTimeout(timer);
+      if (!res.ok) continue;
+      var j = await res.json();
+      if (j.code !== 'Ok' || !j.routes || !j.routes[0]) continue;
+      var r = j.routes[0];
+      return { geometry: r.geometry, distance: r.distance, duration: r.duration, provider: ei===0 ? 'osrm.org' : 'osm.de' };
+    } catch (e) {
+      try { console.warn('OSRM '+ei+' failed', e.message || e); } catch(e2){}
+      continue;
+    }
   }
+  return null;
 }
 
 export async function optimizarRuta(clientIds, clientsMap) {

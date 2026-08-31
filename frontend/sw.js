@@ -4,8 +4,8 @@
  * BackgroundSync: gps-gas-sync (clientes) and gps-local-queue (entregado)
  */
 var CACHES = {
-  STATIC: 'gps-static-v4',
-  GAS_API: 'gps-gas-api-v4',
+  STATIC: 'gps-static-v5',
+  GAS_API: 'gps-gas-api-v5',
   TILES: 'gps-tiles-v1'
 };
 var GAS_ORIGIN = 'https://script.google.com';
