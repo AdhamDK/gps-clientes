@@ -355,10 +355,26 @@ html[data-theme] body, html[data-theme] .header, html[data-theme] .sidebar, html
 
 .dropdown-wrap{position:relative;display:inline-block;}.dropdown-menu{position:absolute;top:calc(100% + 6px);left:0;min-width:180px;background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.12);list-style:none;padding:4px;margin:0;z-index:1200;}[role="menuitem"]{padding:8px 12px;font-size:13px;cursor:pointer;border-radius:6px;} [role="menuitem"]:hover,[role="menuitem"]:focus{background:var(--bg);outline:none;color:var(--primary);} [role="menuitem"]:focus-visible{outline:2px solid var(--strava);outline-offset:-2px;} .dropdown-menu[hidden]{display:none!important;}
 .offline-banner{background:#1E1E1E;color:#FC4C02;padding:8px 12px;text-align:center;font-size:13px;font-weight:700;border-bottom:2px solid #FC4C02;position:sticky;top:0;z-index:1500;transition:opacity .2s ease;} .offline-banner[hidden]{display:none!important;}
+/* v1.1.10: hide Netlify preview badge that was covering Optimizar button */
+a[href*="netlify"], div[style*="Powered by Netlify"], iframe[title*="Netlify"], .netlify-badge { display:none !important; }
+/* Netlify injected pill "Powered by Netlify" fixed bottom - force hide */
+div:has(> a[href*="netlify"]) { display:none !important; }
+
+/* v1.1.10: clientes list scrollable - before only 5 visible */
+#clientesMenu { display:flex; flex-direction:column; max-height: 62vh; overflow:hidden; }
+#clientesMenu .lista-wrap { flex:1; min-height:0; overflow:hidden; display:flex; flex-direction:column; }
+#listaClientes { flex:1; overflow-y:auto; max-height: 48vh; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; }
+#listaClientes .cliente-card:last-child { margin-bottom: 12px; }
+
+/* v1.1.10: ensure mini-menu not clipped on mobile 360dp + safe area */
+.mini-menu { padding-bottom: max(8px, env(safe-area-inset-bottom, 0px)); }
+
 /* Responsive */
 @media (max-width: 900px) {
-  .layout { flex-direction: column; padding-bottom: 56px; /* fix barra */ }
+  .layout { flex-direction: column; padding-bottom: 72px; /* v1.1.10: +16 for badge safe */ }
   .sidebar { width: 100%; min-width: 0; max-height: none; }
-  #map { min-height: 360px; height: calc(100dvh - 61px - 56px); /* fix barra */ }
-  .mini-menu { left: 0; right: 0; width:100%; max-width:100vw; margin:0; box-sizing:border-box; overflow-x:auto; overflow-y:hidden; scrollbar-width:none; /* fix barra: mobile sin left360 ni calc(100% -360) */ }
+  #map { min-height: 360px; height: calc(100dvh - 61px - 72px); /* v1.1.10 */ }
+  .mini-menu { left: 0; right: 0; width:100%; max-width:100vw; margin:0; box-sizing:border-box; overflow-x:auto; overflow-y:hidden; scrollbar-width:none; /* fix barra: mobile sin left360 ni calc(100% -360) */ bottom: env(safe-area-inset-bottom, 0px); }
+  #clientesMenu { max-height: 58vh; }
+  #listaClientes { max-height: 42vh; }
 }
