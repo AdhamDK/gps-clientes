@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>GPS_CLIENTES — Gestión de Rutas</title>
+  <script>(function(){try{var t=localStorage.getItem('theme');var v=['light','dark','mid'];if(!t||v.indexOf(t)===-1){t=matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';}document.documentElement.setAttribute('data-theme',t);}catch(e){document.documentElement.setAttribute('data-theme','light');}})();</script>
+  <link rel="manifest" href="./manifest.json" />
+  <meta name="theme-color" content="#FC4C02" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <div id="offlineBanner" class="offline-banner" hidden role="status" aria-live="polite">Sin conexión — trabajando offline · cambios en cola</div>
+  <header class="header">
+    <div class="header-left">
+      <div class="logo">GPS</div>
+      <div class="header-title">
+        <h1>GPS_CLIENTES</h1>
+        <p>Sistema Offline-First · El Vigía</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <span id="healthBadge" class="badge-health">● verificando...</span>
+      <button id="btnMyLocation" class="btn btn-ghost" title="Mi ubicación — centrar mapa">◎ Mi ubicación</button>
+      <button id="btnTheme" class="btn btn-ghost" title="Cambiar tema (claro / oscuro / medio)">◐ Tema</button>
+      <button class="btn btn-ghost" onclick="location.reload()">↻ Recargar</button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="sidebar-controls">
+        <div class="panel-toggles" style="display:flex;gap:8px;margin-bottom:8px">
+          <button id="actionsToggle" type="button" class="btn btn-ghost" aria-expanded="true" aria-controls="actionsMenu" style="flex:1;text-align:left">Opciones ▾</button>
+          <button id="clientesToggle" type="button" class="btn btn-ghost" aria-expanded="true" aria-controls="clientesMenu" style="flex:1;text-align:left">Clientes ▾</button>
+        </div>
+        <div id="actionsDropdown" class="opciones-panel">
+          <div id="actionsMenu">
+            <div class="search-row">
+              <input id="q" class="input" type="search" placeholder="Buscar cliente (Vigía, RIF, nombre...)" autocomplete="off" />
+              <select id="filtroZona" class="select" title="Filtrar por zona">
+                <option value="">Todas las zonas</option>
+                <option value="VIGIA">VIGIA</option>
+                <option value="Zona Norte">Zona Norte</option>
+                <option value="Lunes">Lunes</option>
+                <option value="Centro">Centro</option>
+              </select>
+            </div>
+
+            <div class="hint">💡 Click en el mapa para agregar cliente. Marca los checkboxes y optimiza la ruta del día.</div>
+
+            <div class="actions-grid">
+              <button id="btnAgregar" class="btn btn-secondary" title="Click en el mapa para elegir ubicación">+ Agregar Cliente</button>
+              <button id="btnOptimizar" class="btn btn-primary">Optimizar Ruta de Hoy</button>
+            </div>
+            <div class="actions-grid">
+              <div class="dropdown-wrap" id="exportDropdownWrap">
+                <button id="btnExportDropdown" class="btn btn-secondary" aria-haspopup="menu" aria-expanded="false" aria-controls="exportMenu">Exportar ▼</button>
+                <ul id="exportMenu" class="dropdown-menu" role="menu" hidden>
+                  <li role="menuitem" tabindex="-1" data-action="xlsx">Exportar XLSX</li>
+                  <li role="menuitem" tabindex="-1" data-action="pdf">Exportar PDF</li>
+                  <li role="menuitem" tabindex="-1" data-action="import">Importar XLSX</li>
+                </ul>
+              </div>
+              <input type="file" id="importFile" accept=".xlsx" hidden />
+              <button id="btnRutasHoy" class="btn btn-ghost">Ver Ruta Guardada</button>
+            </div>
+            <div class="actions-grid">
+              <button id="btnLimpiarRuta" class="btn btn-secondary">Limpiar Ruta</button>
+              <span style="font-size:11px;color:var(--muted);align-self:center">Exportar vía ▼ arriba</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="clientesMenu">
+        <div class="lista-wrap">
+          <div class="lista-header">
+            <h3>Clientes</h3>
+            <span id="countClientes" class="count">0</span>
+          </div>
+          <div class="selection-bar" style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
+            <span id="selectionBadge" class="selection-badge" style="display:none">0 seleccionados</span>
+            <button id="btnClearSelection" class="btn btn-ghost" style="font-size:12px;padding:4px 8px">Limpiar</button>
+          </div>
+          <div id="paginacionBanner" aria-live="polite" style="font-size:12px;color:var(--muted);margin-bottom:8px;display:none"></div>
+          <div id="listaClientes"></div>
+        </div>
+
+        <div id="rutaPanel" class="ruta-panel" style="display:none">
+          <h4>🚚 Ruta Optimizada</h4>
+          <ol id="listaRuta"></ol>
+          <div id="rutaStats" class="ruta-stats"></div>
+        </div>
+      </div>
+    </aside>
+
+    <div class="map-wrap">
+      <div id="map"></div>
+      <button id="btnMyLocationMap" class="fab-my-location" title="Centrar en mi ubicación" aria-label="Centrar en mi ubicación">◎</button>
+    </div>
+
+  <div id="miniMenu" class="mini-menu" role="toolbar" aria-label="Acciones selección"><!-- fix visual 3: panel inferior siempre visible -->
+    <span id="miniMenuCount">0 seleccionados</span>
+    <div class="mini-menu-actions">
+      <button id="btnMiniMarcar" class="btn btn-secondary">Marcar entregados</button>
+      <button id="btnMiniTerminar" class="btn btn-ghost">Terminar lista</button>
+      <button id="btnMiniClear" class="btn btn-ghost">Limpiar</button>
+      <button id="btnMiniOptimizar" class="btn btn-primary">Optimizar</button>
+    </div>
+  </div>
+  </div>
+
+  <!-- Modal Agregar/Editar Cliente -->
+  <div id="modalOverlay" class="modal-overlay" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <h3 id="modalTitle">Agregar Cliente</h3>
+      <form id="formCliente" class="form-grid">
+        <div class="form-row">
+          <label for="fNombre">Nombre *</label>
+          <input id="fNombre" class="input" required placeholder="Ej: Abasto La Blanca" />
+        </div>
+        <div class="form-row">
+          <label for="fReferencia">Referencia</label>
+          <input id="fReferencia" class="input" placeholder="Ej: Frente a la plaza, El Vigía" />
+        </div>
+        <div class="form-row">
+          <label for="fZona">Zona</label>
+          <select id="fZona" class="select">
+            <option value="">Sin zona</option>
+            <option value="VIGIA">VIGIA</option>
+            <option value="Zona Norte">Zona Norte</option>
+            <option value="Lunes">Lunes</option>
+            <option value="Centro">Centro</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label for="fRif">RIF (opcional, Ej: J12345678)</label>
+          <input id="fRif" class="input" placeholder="J123456789" pattern="^[JVEGP][0-9]{7,9}$" title="Formato RIF: J/V/E/G/P + 7-9 dígitos" />
+        </div>
+        <div class="coords">
+          <div class="form-row">
+            <label for="fLat">Lat</label>
+            <input id="fLat" class="input" readonly />
+          </div>
+          <div class="form-row">
+            <label for="fLng">Lng</label>
+            <input id="fLng" class="input" readonly />
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button type="button" id="btnCancelar" class="btn btn-secondary">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Confirm Delete Modal -->
+  <div id="confirmOverlay" class="modal-overlay" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+      <h3 id="confirmTitle">Confirmar borrado</h3>
+      <p id="confirmText" style="font-size:14px;color:var(--muted);margin:8px 0 16px"></p>
+      <div class="modal-actions">
+        <button type="button" id="btnConfirmCancel" class="btn btn-secondary">Cancelar</button>
+        <button type="button" id="btnConfirmDelete" class="btn" style="background:var(--danger);color:white">Borrar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <meta name="gas-url" content="https://script.google.com/macros/s/AKfycbweLpc8AI2C4ouMY6AWrH6Voiemkoa4tlwc6qjyqeYIyIK1jGOvGdt_3YiNKKP6V6LsGA/exec" />
+  <script>window.GAS_URL = window.GAS_URL || document.querySelector('meta[name="gas-url"]')?.content || localStorage.getItem('GAS_URL') || 'https://script.google.com/macros/s/AKfycbweLpc8AI2C4ouMY6AWrH6Voiemkoa4tlwc6qjyqeYIyIK1jGOvGdt_3YiNKKP6V6LsGA/exec';</script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/localforage@1.10.0/dist/localforage.min.js"></script>
+  <script type="module" src="./syncEngine.js"></script>
+  <script src="./js/selectionManager.js"></script>
+  <script src="./js/syncQueue.js"></script>
+  <script type="module" src="./app.js"></script>
+  <script>if('serviceWorker' in navigator){navigator.serviceWorker.register('./sw.js').catch(function(e){console.warn('SW register fail',e);});}</script>
+</body>
+</html>

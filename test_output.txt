@@ -1,0 +1,27 @@
+﻿..........................................                               [100%]
+============================== warnings summary ===============================
+backend/tests/test_import_export.py: 21 warnings
+backend/tests/test_optimize_health.py: 4 warnings
+  C:\Users\Usuario\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\openpyxl\packaging\core.py:99: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    now = datetime.datetime.utcnow()
+
+backend/tests/test_import_export.py::test_import_skips_invalid_rif
+backend/tests/test_import_export.py::test_import_dedup_by_rif_and_nombre_normalizado
+backend/tests/test_import_export.py::test_import_hasGpsFix_false_no_lat_lng
+backend/tests/test_import_export.py::test_export_xlsx_column_picker_and_reparseable
+backend/tests/test_import_export.py::test_export_default_whitelist_and_streaming
+backend/tests/test_optimize_health.py::test_verify_9_endpoints_under_2s_per_10_clients
+backend/tests/test_optimize_health.py::test_verify_9_endpoints_under_2s_per_10_clients
+  C:\Users\Usuario\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\openpyxl\writer\excel.py:292: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    workbook.properties.modified = datetime.datetime.utcnow()
+
+backend/tests/test_import_export.py::test_export_pdf_streaming_starts_with_pdf
+  C:\Users\Usuario\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\reportlab\lib\rl_safe_eval.py:11: DeprecationWarning: ast.NameConstant is deprecated and will be removed in Python 3.14; use ast.Constant instead
+    haveNameConstant = hasattr(ast,'NameConstant')
+
+backend/tests/test_loop2_transaccion.py: 5001 warnings
+  C:\Users\Usuario\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\sqlalchemy\sql\schema.py:3624: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    return util.wrap_callable(lambda ctx: fn(), fn)  # type: ignore
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+42 passed, 5034 warnings in 3.79s

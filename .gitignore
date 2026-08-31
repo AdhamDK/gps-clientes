@@ -1,0 +1,38 @@
+# Backend SQLite (generated)
+backend/clientes.db
+backend/*.db
+backend/*.db-journal
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+.env
+harness/__pycache__/
+
+# Logs
+*.log
+
+# OS artifacts
+.DS_Store
+Thumbs.db
+
+# Android / Gradle (derived)
+app/build/
+.gradle/
+gradle/wrapper/gradle-wrapper.jar
+local.properties
+
+# Frontend derived — canonical source is frontend/, www is generated via copyFrontendToAssets
+app/src/main/assets/www/
+
+# Routing data (large PBF, not committed) — derived .osrm files are also ignored
+osrm-data/
+
+# Secrets / tokens
+rclone_token.json
+
+# Debug one-offs (not pytest tests)
+# scripts/one-offs/ contains moved root scripts; keep tracked via .gitkeep if empty

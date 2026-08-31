@@ -1,0 +1,288 @@
+================================================================================
+ARQUITECTURA PROPIA - GPS CLIENTES - SPECS DE RUTA
+Proyecto: GPS_CLIENTES - Sistema Offline-First de Gestión de Rutas
+Stack: Leaflet + FastAPI + SQLite + VROOM/OSRM (Docker Local)
+Fecha: 24/08/2026 - Pale pa' GO - v1.0
+================================================================================
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  VISIÓN GENERAL                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+  [ Tu App (HTML/JS + Leaflet o Flutter) ]
+                  │
+                  ▼ (Envía lista de clientes del día)
+  [ Backend FastAPI (Python) ]  ◄── SQLite Local (clientes.db)
+                  │
+                  ▼ (POST /optimize con coordenadas)
+  [ Motor VROOM / OSRM (Docker) ] → http://localhost:3000
+                  │
+                  ▼ (Orden óptimo: 3→1→2 + polilínea)
+  [ App dibuja ruta numerada 1,2,3... + línea en Leaflet ]
+
+OBJETIVO: 100% offline-first, sin Google Maps, sin billing, sin internet obligatorio.
+Datos viven en SQLite local. VROOM corre en Docker local, responde en milisegundos.
+Frontend 100% tuyo: tu logo, colores, filtros por zona, tu identidad.
+
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  1. MOTOR BACKEND: VROOM / OSRM EN DOCKER                                   │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+  OPCIÓN A - VROOM (recomendado para optimización de visitas múltiples):
+  ------------------------------------------------------------------------
+  Archivo: docker-compose.yml (en raiz GPS_CLIENTES/)
+  
+  version: '3.8'
+  services:
+    vroom:
+      image: vroomvrp/vroom-docker:v1.13.0
+      ports:
+        - "3000:3000"
+      environment:
+        - VROOM_ROUTER=osrm
+      depends_on:
+        - osrm
+    osrm:
+      image: osrm/osrm-backend:v5.27.0
+      volumes:
+        - ./osrm-data:/data
+      command: >
+        bash -c "osrm-extract -p /opt/car.lua /data/venezuela-latest.osm.pbf &&
+                 osrm-partition /data/venezuela-latest.osm &&
+                 osrm-customize /data/venezuela-latest.osrm &&
+                 osrm-routed --algorithm=MLD /data/venezuela-latest.osrm"
+      ports:
+        - "5000:5000"
+
+  Setup:
+    1. Descargar PBF: wget https://download.geofabrik.de/south-america/venezuela-latest.osm.pbf -O osrm-data/venezuela-latest.osm.pbf
+    2. docker compose up -d
+    3. Verificar: curl http://localhost:3000/health  → 200 OK
+                curl "http://localhost:5000/route/v1/driving/-71.65,8.61;-71.66,8.62?overview=full" → polilínea
+
+  OPCIÓN B - OSRM solo (más simple, solo ruteo punto a punto, sin optimización):
+    Si VROOM es mucho, usa solo OSRM para dibujar línea y optimiza con heurística nearest-neighbor en Python.
+
+  Contrato VROOM (POST http://localhost:3000):
+  ------------------------------------------------
+  Request:
+  {
+    "jobs": [
+      {"id": 1, "location": [-71.65, 8.61], "description": "Cliente 1 - El Vigia"},
+      {"id": 2, "location": [-71.66, 8.62], "description": "Cliente 2 - La Blanca"}
+    ],
+    "vehicles": [{"id": 1, "start": [-71.64, 8.60], "end": [-71.64, 8.60]}]
+  }
+  Response:
+  {
+    "code": 0,
+    "routes": [{"steps": [{"type":"job","id":2}, {"type":"job","id":1}]}],
+    "summary": {"distance": 5420, "duration": 890}
+  }
+  → Orden óptimo: 2 → 1
+
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  2. BACKEND INTEGRADOR: FastAPI + SQLite (Python)                           │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+  Archivo: backend/main.py
+  Stack: FastAPI 0.110, Uvicorn, SQLAlchemy 2.0 / sqlite3, Pydantic, httpx
+
+  Estructura:
+    backend/
+      main.py              # FastAPI app + endpoints
+      models.py            # SQLAlchemy modelos
+      schemas.py           # Pydantic
+      database.py          # SQLite engine
+      vroom_client.py      # Cliente HTTP a localhost:3000
+      requirements.txt
+      clientes.db          # SQLite local (gitignored)
+      Dockerfile (opcional)
+
+  Modelos SQLite:
+  --------------
+  Table clientes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nombre TEXT NOT NULL,
+    nombre_normalizado TEXT NOT NULL INDEX,  -- lower + NFD strip
+    rif TEXT NULL,
+    lat REAL NOT NULL,
+    lng REAL NOT NULL,
+    texto_breve TEXT,        -- "El Vigia, Municipio Alberto Adriani, Sector La Blanca"
+    referencia TEXT,
+    zona TEXT,               -- "Zona Norte", "Lunes" para filtros
+    is_flagged BOOLEAN DEFAULT 0,
+    created_at INTEGER,      -- epoch millis
+    updated_at INTEGER
+  )
+  Table rutas_hoy (
+    id INTEGER PRIMARY KEY,
+    cliente_id INTEGER FK clientes.id,
+    orden INTEGER,           -- 1,2,3...
+    fecha TEXT               -- "2026-08-24"
+  )
+
+  Endpoints FastAPI:
+  ------------------
+  POST   /clientes              # body: {nombre, lat, lng, referencia, zona, rif?} -> crea
+  GET    /clientes?q=vigia&zona=Norte -> busca LIKE + NFD + fuzzy, lista
+  GET    /clientes/{id}
+  PATCH  /clientes/{id}         # actualiza lat/lng/texto_breve/referencia
+  DELETE /clientes/{id}
+  POST   /clientes/import       # multipart form-data .xlsx (Clientes_TOM_KEVIN.xlsx) -> parse openpyxl
+  GET    /clientes/export?formato=xlsx|pdf&columnas=... -> genera Excel (openpyxl) / PDF (reportlab) streaming
+  POST   /rutas/optimizar       # body: {cliente_ids: [1,2,3], start: {lat,lng}?} 
+                                # 1. Lee SQLite, 2. POST a VROOM localhost:3000, 3. Guarda en rutas_hoy, 4. Retorna {orden: [3,1,2], distance, duration, geometry}
+  GET    /rutas/hoy?fecha=2026-08-24 -> lista ordenada
+  GET    /health
+
+  Lógica /rutas/optimizar (pseudocódigo):
+  ----------------------------------------
+  def optimizar(cliente_ids, start=None):
+      clientes = db.query(Cliente).filter(id IN cliente_ids).all()
+      jobs = [{"id": c.id, "location": [c.lng, c.lat]} for c in clientes]
+      vehicles = [{"id":1, "start": start or jobs[0].location, "end": start or jobs[0].location}]
+      resp = httpx.post("http://localhost:3000", json={"jobs": jobs, "vehicles": vehicles}, timeout=5)
+      orden = [step["id"] for step in resp.json()["routes"][0]["steps"] if step["type"]=="job"]
+      # Opcional: pedir polilínea a OSRM: POST http://localhost:5000/route/v1/driving/{coords}?overview=full
+      return {"orden": orden, "clientes_ordenados": sorted(clientes, key=orden), "geometry": osrm_polyline}
+
+  Requisitos no funcionales:
+    - 100% local: sin internet, solo localhost
+    - Validación RIF regex ^[JVEGP]\d{7,9}$
+    - Normalización NFD para búsqueda
+    - CORS habilitado para frontend file:// y localhost:8000
+
+  Comando:
+    pip install -r requirements.txt
+    uvicorn main:app --reload --port 8000  # http://localhost:8000/docs (Swagger)
+
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  3. INTERFAZ: Leaflet.js + HTML/JS (Tu toque personal)                     │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+  Archivo: frontend/index.html + app.js + style.css
+  Stack: Leaflet 1.9.4 (CDN), HTML5, Vanilla JS (o Vite), Fetch API
+
+  Estructura:
+    frontend/
+      index.html
+      app.js
+      style.css
+      assets/logo.png
+
+  Mapa base Leaflet:
+  ------------------
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <div id="map" style="height: 80vh;"></div>
+  <script>
+    const map = L.map('map').setView([8.61, -71.65], 15); // El Vigía
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OSM',
+      maxZoom: 19
+    }).addTo(map);
+    // User-Agent ya lo maneja el navegador, no hay bloqueo como en Android osmdroid
+  </script>
+
+  Funcionalidades UI (según spec):
+  ---------------------------------
+  1. Botón "+ Agregar Cliente":
+     - Click en mapa → map.on('click', e => { latlng = e.latlng; showForm(latlng) })
+     - Form modal: Nombre*, Referencia, Zona (select), RIF opcional, lat/lng auto
+     - POST /clientes {nombre, lat, lng, referencia, zona} → marker rojo en mapa
+     - Marcadores: L.marker([lat,lng]).addTo(map).bindPopup(nombre + texto_breve)
+
+  2. Botón "Optimizar Ruta de Hoy":
+     - Checkboxes en lista lateral o selección en mapa (Ctrl+click)
+     - POST /rutas/optimizar {cliente_ids: seleccionados} → recibe {orden, geometry}
+     - Render: lista numerada <ol><li>1. Cliente 3 - El Vigia (2.3km)</li>...</ol>
+     - Dibuja línea: L.polyline(decodedGeometry, {color: '#0A84FF', weight: 5}).addTo(map)
+     - Opcional: L.Routing no necesario, VROOM ya da orden, OSRM da geometry
+
+  3. Identidad propia:
+     - Header con tu logo, nombre proyecto, colores (definir en style.css :root {--primary: #0A84FF})
+     - Filtros por zona: <select id="filtroZona"><option>Zona Norte</option><option>Lunes</option></select> → GET /clientes?zona=Norte
+     - Búsqueda: <input id="q" oninput="buscar()"> → GET /clientes?q=vigia (LIKE NFD)
+     - Lista lateral con cards de clientes, drag para reordenar manual si VROOM falla
+
+  Flujo completo:
+    Abrir http://localhost:8000 (FastAPI sirve frontend static) → Ver mapa El Vigía → Click mapa → Form → Guardar → Marker aparece → Seleccionar 5 clientes del día → Click "Optimizar Ruta" → Lista 1→5 numerada + línea azul conectando puntos → Exportar a Excel/PDF (link a /clientes/export)
+
+  Servir frontend desde FastAPI:
+    app.mount("/static", StaticFiles(directory="frontend"), name="static")
+    # o simplemente abrir frontend/index.html con Live Server y fetch a http://localhost:8000
+
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  STACK COMPLETO Y COMANDOS                                                  │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+  Requisitos: Python 3.11+, Docker Desktop, Node no necesario si es vanilla JS
+
+  Estructura final:
+    GPS_CLIENTES/
+      docker-compose.yml
+      osrm-data/venezuela-latest.osm.pbf
+      backend/ (FastAPI + clientes.db)
+      frontend/ (Leaflet)
+      docs/ARQUITECTURA_PROPIA_SPECS.txt (este archivo)
+
+  Comandos GO:
+    # 1. Motor rutas
+    docker compose up -d
+    curl http://localhost:3000/health
+    # 2. Backend
+    cd backend && pip install -r requirements.txt && uvicorn main:app --reload --port 8000
+    # 3. Frontend
+    # Abrir http://localhost:8000/docs para probar API
+    # Abrir frontend/index.html en navegador (o http://localhost:8000/static/index.html si lo sirve FastAPI)
+
+  Dependencias (requirements.txt):
+    fastapi==0.110.0
+    uvicorn[standard]==0.27.0
+    sqlalchemy==2.0.27
+    pydantic==2.6.0
+    httpx==0.26.0
+    openpyxl==3.1.2
+    reportlab==4.0.7
+    python-multipart==0.0.6
+
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  ROADMAP - PALE PA' GO                                                      │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+  FASE 1 - MVP Local (1 semana):
+    [ ] docker-compose.yml con VROOM/OSRM + descarga PBF Venezuela
+    [ ] backend/main.py con CRUD clientes + SQLite + POST /rutas/optimizar (httpx a localhost:3000)
+    [ ] frontend Leaflet con mapa + click → agregar cliente + lista + optimizar → dibuja línea
+    [ ] Importar Clientes_TOM_KEVIN.xlsx (openpyxl) y exportar
+
+  FASE 2 - Pulido:
+    [ ] Filtros por zona, búsqueda NFD, validación RIF, flags
+    [ ] Estilo propio (logo, colores), responsive, PWA para instalar como app
+    [ ] Caché tiles OSM para offline total (osmdroid ya lo hace, en web usa localStorage)
+
+  FASE 3 - Móvil (opcional):
+    [ ] Si quieres APK, envuelve frontend con Capacitor/Cordova o migra a Flutter con flutter_map (mismo backend localhost via 10.0.2.2)
+
+  Criterio de éxito: Seleccionar 10 clientes → Optimizar → ver lista numerada + línea en <2s sin internet (solo localhost).
+
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  DECISIONES CLAVE Y RIESGOS                                                 │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+  - VROOM vs OSRM solo: VROOM optimiza orden (TSP), OSRM solo rutea. Para "ruta óptima" necesitas VROOM. Si solo quieres dibujar línea sin optimizar, OSRM basta.
+  - PBF Venezuela pesa ~120MB, extrae en ~5min. Si solo necesitas Mérida, recorta con osmium.
+  - SQLite local es suficiente para 409 clientes (no necesitas Postgres). Backup es copiar clientes.db.
+  - Leaflet es liviano (40KB) vs Flutter (más setup). Para MVP web, Leaflet gana. Para APK nativa, Flutter + flutter_map es el espejo.
+  - Sin billing, sin API key, 100% tuyo. Escalable: mañana cambias VROOM por ORS sin tocar frontend.
+
+================================================================================
+FIN SPECS - ¿Listo para docker compose up -d y uvicorn?
+================================================================================

@@ -1,0 +1,20 @@
+﻿python : Traceback (most recent call last):
+En línea: 1 Carácter: 1
++ python -c "import backend.main; print('ok4')" 2>&1 | Out-File -Encodi ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Traceback (most recent call last)::String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  File "<string>", line 1, in <module>
+    import backend.main; print('ok4')
+    ^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Usuario\Documents\GPS_CLIENTES\backend\main.py", line 29, in <module>
+    from . import models, schemas, vroom_client
+  File "C:\Users\Usuario\Documents\GPS_CLIENTES\backend\models.py", line 57, in <module>
+    class RutasHoy(Base):
+    ...<15 lines>...
+        )
+  File "C:\Users\Usuario\Documents\GPS_CLIENTES\backend\models.py", line 61, in RutasHoy
+    cliente_id = Column(String, ForeignKey("clientes.id", ondelete="CASCADE"), nullable=False)
+                                ^^^^^^^^^^
+NameError: name 'ForeignKey' is not defined

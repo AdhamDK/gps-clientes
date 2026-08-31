@@ -1,0 +1,71 @@
+schema: spec-driven
+
+context: |
+  Project: GPS_CLIENTES — Offline-first route management for El Vigia (Venezuela)
+  Stack: Python 3.13 FastAPI 0.11 + SQLAlchemy 2.0 + SQLite + Pydantic v2 | Kotlin 1.9.22 Compose/Room/Hilt/KSP (compileSdk 34) | Vanilla JS Leaflet + localforage | VROOM v1.13 + OSRM v5.27 Docker | GAS/Sheets LWW sync
+  Architecture: Backend REST (backend/main.py 888 lines) + VROOM/OSRM routing + Frontend Leaflet SPA (frontend/app.js) + Android WebView wrapper (app/src/main) + Offline sync via syncEngine.js/localforage
+  Testing: pytest 8.0 + pytest-asyncio 0.23 | 45 tests passing (42 backend/tests + 3 harness sync) | No coverage/lint/typecheck tooling
+  Branch: feature/gps-clientes-filtro-seleccion | Git root mismatch — see risks
+  Conventions: Conventional commits, NFD normalization (normalize_nfd), RIF ^[JVEGP]\d{7,9}$, UUID TEXT PK, CORS whitelist, soft-delete (deleted=0/1)
+
+rules:
+  proposal:
+    - Include rollback plan for risky changes (DB migration, RutasHoy atomicity, CORS)
+    - State impact on offline sync (lastSync LWW) and on VROOM/OSRM fallback
+  specs:
+    - Use Given/When/Then for scenarios
+    - Use RFC 2119 keywords (MUST, SHALL, SHOULD, MAY)
+    - Scope frontend/backend/Android deltas separately; reference existing endpoints
+  design:
+    - Include sequence diagrams for VROOM/OSRM flows and GAS sync (GET lastSync / POST LWW)
+    - Document data model deltas (Cliente 11-col backend vs 31-col Room) and migration steps
+    - Note SQLite file location (backend/clientes.db) and legacy INTEGER->TEXT migration
+  tasks:
+    - Group by phase, use hierarchical numbering
+    - Keep tasks completable in one session; separate backend/frontend/Android/harness tasks
+    - Reference test files that must stay green (backend/tests/, tests/test_sync_engine.py)
+  apply:
+    guidelines:
+      - Follow existing code patterns (normalize_nfd, _resolve_lat_lng, sync_status/deleted, has_gps_fix derived)
+      - Preserve CORS whitelist (no wildcard) and pagination limits (PAGINACION_LIMITE 500 / LIMIT_MAX_ROWS 5000)
+    tdd: true
+    test_command: "python -m pytest -q"
+  verify:
+    test_command: "python -m pytest -q"
+    build_command: ""
+    coverage_threshold: 0
+  archive:
+    - Warn before merging destructive deltas (RIF, NFD, has_gps_fix, rutas_hoy atomic delete)
+    - Ensure backup exists (GPS_CLIENTES_backup_20260830_142728.zip) before destructive migrations
+
+# --- SDD Persistence ---
+artifact_store: openspec
+
+# --- Testing Capabilities (persisted per sdd-init contract) ---
+testing:
+  strict_tdd: true
+  detected: "2026-08-30"
+  runner:
+    command: "python -m pytest"
+    framework: "pytest 8.0.1 + pytest-asyncio 0.23.5"
+    alternative: "pytest"
+    notes: "pytest.ini scopes collection to backend/tests and tests; stray one-offs moved to scripts/one-offs/. 45 tests collected, 45 passed via plain python -m pytest -q."
+  layers:
+    unit: { available: true, tool: "pytest (backend/tests/test_crud_search.py, test_import_export.py, test_entregados.py, test_regressions_20260830.py, test_loop2_transaccion.py, test_optimize_health.py)" }
+    integration: { available: true, tool: "pytest + httpx MockTransport + FastAPI TestClient + harness/mock_gas (tests/test_sync_engine.py — full offline sync cycle against mock GAS on :8765)" }
+    e2e: { available: false, tool: "— (frontend e2e specs exist as .js harnesses: frontend/e2e.strava.spec.js, test_offline_pwa.js, test_selection_manager.js but no Playwright/Cypress runner configured; Android instrumented tests: app/src/androidTest requiring emulator)" }
+  coverage:
+    available: false
+    command: "— (pytest-cov not installed; pip show pytest-cov => not found)"
+  quality:
+    linter: { available: false, command: "— (no ruff/flake8/eslint config found)" }
+    type_checker: { available: false, command: "— (no mypy/pyright/tsc config found)" }
+    formatter: { available: false, command: "— (no black/prettier config found)" }
+
+# --- Known Risks (surfaces in init envelope; not enforced as rules) ---
+risks:
+  - "Git root is C:/Users/Usuario (remote catalogo-empresa) — manual re-init at GPS_CLIENTES/ pending (see docs/GIT_REINIT_CHECKLIST.md); commits/branches still operate on wrong root until user runs Phase 4"
+  - "No coverage/lint/typecheck — quality gates are manual until tooling added"
+  - "pytest.ini now scopes collection; stray one-offs archived to scripts/one-offs/ (no --ignore hacks)"
+  - "OSRM PBF (osrm-data/venezuela-latest.osm.pbf) not committed; Docker routing requires manual download"
+  - "gradle-wrapper.jar not committed (see docs/CI_VERIFICATION.md); Android build requires `gradle wrapper --gradle-version 8.6` on fresh clone; www/ is now derived via copyFrontendToAssets and gitignored"

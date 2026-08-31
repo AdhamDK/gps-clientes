@@ -1,0 +1,316 @@
+<?xml version='1.0' encoding='UTF-8' standalone='yes' ?>
+<gpx version="1.1" creator="OsmAnd 5.3.10" xmlns="http://www.topografix.com/GPX/1/1" xmlns:osmand="https://osmand.net/docs/technical/osmand-file-formats/osmand-gpx" xmlns:gpxtpx="https://www8.garmin.com/xmlschemas/TrackPointExtensionv1.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.topografix.com/GPX/1/1 https://www.topografix.com/GPX/1/1/gpx.xsd">
+  <metadata>
+    <name>favorites-Rutero</name>
+  </metadata>
+  <wpt lat="8.6209463" lon="-71.6537056">
+    <ele>106.5</ele>
+    <time>2026-08-26T12:02:46Z</time>
+    <name>Abdón Segundo Pirella</name>
+    <type>Rutero</type>
+    <extensions>
+      <osmand:address>Abdón Segundo Pirella</osmand:address>
+      <osmand:hidden>true</osmand:hidden>
+    </extensions>
+  </wpt>
+  <wpt lat="8.6547655" lon="-71.6684616">
+    <ele>67</ele>
+    <time>2026-08-26T12:03:55Z</time>
+    <name>Adriana Del Valle Finol Los Compadres</name>
+    <type>Rutero</type>
+    <extensions>
+      <osmand:address>Adriana Del Valle Finol Los Compadres</osmand:address>
+      <osmand:hidden>true</osmand:hidden>
+    </extensions>
+  </wpt>
+  <wpt lat="8.6144567" lon="-71.6651285">
+    <ele>89.8</ele>
+    <time>2026-08-26T12:01:37Z</time>
+    <name>Bodega Anjhemiss</name>
+    <type>Rutero</type>
+    <extensions>
+      <osmand:address>Bodega Anjhemiss</osmand:address>
+      <osmand:hidden>true</osmand:hidden>
+    </extensions>
+  </wpt>
+  <wpt lat="8.6147605" lon="-71.6802813">
+    <ele>75.2</ele>
+    <time>2026-08-26T12:01:19Z</time>
+    <name>Bodega Da'Silva</name>
+    <type>Rutero</type>
+    <extensions>
+      <osmand:address>Bodega Da'Silva</osmand:address>
+      <osmand:hidden>true</osmand:hidden>
+    </extensions>
+  </wpt>
+  <wpt lat="8.6117056" lon="-71.6750379">
+    <ele>86.5</ele>
+    <time>2026-08-26T12:02:17Z</time>
+    <name>Bodega Dios Es Amor Carmen Edicta Suarez</name>
+    <type>Rutero</type>
+    <extensions>
+      <osmand:address>Bodega Dios Es Amor Carmen Edicta Suarez</osmand:address>
+      <osmand:hidden>true</osmand:hidden>
+    </extensions>
+  </wpt>
+  <wpt lat="8.613788" lon="-71.6827755">
+    <time>2026-08-26T12:01:06Z</time>
+    <name>Bodega el cuñado</name>
+    <type>Rutero</type>
+    <extensions>
+      <osmand:address>Bodega el cuñado</osmand:address>
+      <osmand:hidden>true</osmand:hidden>
+    </extensions>
+  </wpt>
+  <wpt lat="8.6187706" lon="-71.6857376">
+    <ele>73.8</ele>
+    <time>2026-08-26T11:58:48Z</time>
+    <name>Bodega La Bendición De Dios</name>
+    <type>Rutero</type>
+    <extensions>
+      <osmand:address>Bodega La Bendición De Dios</osmand:address>
+      <osmand:hidden>true</osmand:hidden>
+    </extensions>
+  </wpt>
+  <wpt lat="8.6109123" lon="-71.6646626">
+    <ele>94.5</ele>
+    <time>2026-08-26T12:02:09Z</time>
+    <name>Bodegón LyC</name>
+    <type>Rutero</type>
+    <extensions>
+      <osmand:address>Bodegón LyC</osmand:address>
+      <osmand:hidden>true</osmand:hidden>
+    </extensions>
+  </wpt>
+  <wpt lat="8.6188622" lon="-71.6863022">
+    <ele>71</ele>
+    <time>2026-08-26T11:58:38Z</time>
+    <name>Casa Kevin</name>
+    <type>Rutero</type>
+    <extensions>
+      <osmand:address>Casa Kevin</osmand:address>
+      <osmand:hidden>true</osmand:hidden>
+    </extensions>
+  </wpt>
+  <wpt lat="8.6156291" lon="-71.6827794">
+    <ele>78</ele>
+    <time>2026-08-26T12:00:46Z</time>
+    <name>DBodegon de Paola</name>
+    <type>Rutero</type>
+    <extensions>
+      <osmand:address>DBodegon de Paola</osmand:address>
+      <osmand:hidden>true</osmand:hidden>
+    </extensions>
+  </wpt>
+  <wpt lat="8.6292655" lon="-71.6595997">
+    <ele>80.5</ele>
+    <time>2026-08-26T12:03:03Z</time>
+    <name>Dist Suhimoca</name>
+    <type>Rutero</type>
+    <extensions>
+      <osmand:address>Dist Suhimoca</osmand:address>
+      <osmand:hidden>true</osmand:hidden>
+    </extensions>
+  </wpt>
+  <wpt lat="8.6583258" lon="-71.6623631">
+    <time>2026-08-26T12:04:06Z</time>
+    <name>Efraín Pulido Fuentes</name>
+    <type>Rutero</type>
+    <extensions>
+      <osmand:address>Efraín Pulido Fuentes</osmand:address>
+      <osmand:hidden>true</osmand:hidden>
+    </extensions>
+  </wpt>
+  <wpt lat="8.6359496" lon="-71.6634536">
+    <ele>75.5</ele>
+    <time>2026-08-26T12:03:09Z</time>
+    <name>Emilia Gutiérrez Leon</name>
+    <type>Rutero</type>
+    <extensions>
+      <osmand:address>Emilia Gutiérrez Leon</osmand:address>
+      <osmand:hidden>true</osmand:hidden>
+    </extensions>
+  </wpt>
+  <wpt lat="8.616069" lon="-71.6687592">
+    <ele>86</ele>
+    <time>2026-08-26T12:01:31Z</time>
+    <name>Erika Madariaga</name>
+    <type>Rutero</type>
+    <extensions>
+      <osmand:address>Erika Madariaga</osmand:address>
+      <osmand:hidden>true</osmand:hidden>
+    </extensions>
+  </wpt>
+  <wpt lat="8.6148844" lon="-71.6565142">
+    <ele>104.8</ele>
+    <time>2026-08-26T12:02:32Z</time>
+    <name>Farmacia Jesús de La Misericordia</name>
+    <type>Rutero</type>
+    <extensions>
+      <osmand:address>Farmacia Jesús de La Misericordia</osmand:address>
+      <osmand:hidden>true</osmand:hidden>
+    </extensions>
+  </wpt>
+  <wpt lat="8.6543462" lon="-71.6681054">
+    <ele>66.8</ele>
+    <time>2026-08-26T12:03:59Z</time>
+    <name>Jaime Uribe Caicedo</name>
+    <type>Rutero</type>
+    <extensions>
+      <osmand:address>Jaime Uribe Caicedo</osmand:address>
+      <osmand:hidden>true</osmand:hidden>
+    </extensions>
+  </wpt>
+  <wpt lat="8.6533804" lon="-71.6726074">
+    <ele>63.2</ele>
+    <time>2026-08-26T11:58:18Z</time>
+    <name>Jehan Piero</name>
+    <type>Rutero</type>
+    <extensions>
+      <osmand:address>Jehan Piero</osmand:address>
+      <osmand:hidden>true</osmand:hidden>
+    </extensions>
+  </wpt>
+  <wpt lat="8.6281972" lon="-71.6605881">
+    <ele>78.8</ele>
+    <time>2026-08-26T12:02:57Z</time>
+    <name>Jhoiner Hernandez</name>
+    <type>Rutero</type>
+    <extensions>
+      <osmand:address>Jhoiner Hernandez</osmand:address>
+      <osmand:hidden>true</osmand:hidden>
+    </extensions>
+  </wpt>
+  <wpt lat="8.6164055" lon="-71.6629902">
+    <time>2026-08-26T12:01:51Z</time>
+    <name>Jhon Leonar Aponcio</name>
+    <type>Rutero</type>
+    <extensions>
+      <osmand:address>Jhon Leonar Aponcio</osmand:address>
+      <osmand:hidden>true</osmand:hidden>
+    </extensions>
+  </wpt>
+  <wpt lat="8.6147025" lon="-71.6568755">
+    <ele>103</ele>
+    <time>2026-08-26T12:02:27Z</time>
+    <name>La Canasta de Oro</name>
+    <type>Rutero</type>
+    <extensions>
+      <osmand:address>La Canasta de Oro</osmand:address>
+      <osmand:hidden>true</osmand:hidden>
+    </extensions>
+  </wpt>
+  <wpt lat="8.6164247" lon="-71.664426">
+    <ele>90</ele>
+    <time>2026-08-26T12:01:46Z</time>
+    <name>Los Mautes</name>
+    <type>Rutero</type>
+    <extensions>
+      <osmand:address>Los Mautes</osmand:address>
+      <osmand:hidden>true</osmand:hidden>
+    </extensions>
+  </wpt>
+  <wpt lat="8.6168495" lon="-71.6708298">
+    <ele>80.2</ele>
+    <time>2026-08-26T12:01:26Z</time>
+    <name>Los Querubines</name>
+    <type>Rutero</type>
+    <extensions>
+      <osmand:address>Los Querubines</osmand:address>
+      <osmand:hidden>true</osmand:hidden>
+    </extensions>
+  </wpt>
+  <wpt lat="8.6532626" lon="-71.6725833">
+    <ele>64.5</ele>
+    <time>2026-08-26T12:03:22Z</time>
+    <name>Marisela Corina Medina</name>
+    <type>Rutero</type>
+    <extensions>
+      <osmand:address>Marisela Corina Medina</osmand:address>
+      <osmand:hidden>true</osmand:hidden>
+    </extensions>
+  </wpt>
+  <wpt lat="8.6181455" lon="-71.6544435">
+    <ele>106.2</ele>
+    <time>2026-08-26T12:02:40Z</time>
+    <name>Osiria Víveres Osiris</name>
+    <type>Rutero</type>
+    <extensions>
+      <osmand:address>Osiria Víveres Osiris</osmand:address>
+      <osmand:hidden>true</osmand:hidden>
+    </extensions>
+  </wpt>
+  <wpt lat="8.6164355" lon="-71.6629927">
+    <time>2026-08-26T12:01:57Z</time>
+    <name>Panadería Croissant La Paez</name>
+    <type>Rutero</type>
+    <extensions>
+      <osmand:address>Panadería Croissant La Paez</osmand:address>
+      <osmand:hidden>true</osmand:hidden>
+    </extensions>
+  </wpt>
+  <wpt lat="8.6138792" lon="-71.6828263">
+    <ele>78.5</ele>
+    <time>2026-08-26T12:01:13Z</time>
+    <name>Panadería Croissant La Pedregosa</name>
+    <type>Rutero</type>
+    <extensions>
+      <osmand:address>Panadería Croissant La Pedregosa</osmand:address>
+      <osmand:hidden>true</osmand:hidden>
+    </extensions>
+  </wpt>
+  <wpt lat="8.6111256" lon="-71.664392">
+    <time>2026-08-26T12:02:05Z</time>
+    <name>Panadería La parada del Venezolano</name>
+    <type>Rutero</type>
+    <extensions>
+      <osmand:address>Panadería La parada del Venezolano</osmand:address>
+      <osmand:hidden>true</osmand:hidden>
+    </extensions>
+  </wpt>
+  <wpt lat="8.6151014" lon="-71.6648587">
+    <ele>88.5</ele>
+    <time>2026-08-26T12:01:42Z</time>
+    <name>Pendiente</name>
+    <type>Rutero</type>
+    <extensions>
+      <osmand:address>Pendiente</osmand:address>
+      <osmand:hidden>true</osmand:hidden>
+    </extensions>
+  </wpt>
+  <wpt lat="8.6161842" lon="-71.6843491">
+    <ele>75.5</ele>
+    <time>2026-08-26T11:59:04Z</time>
+    <name>Ramón Ardilla Ovallos</name>
+    <type>Rutero</type>
+    <extensions>
+      <osmand:address>Ramón Ardilla Ovallos</osmand:address>
+      <osmand:hidden>true</osmand:hidden>
+    </extensions>
+  </wpt>
+  <wpt lat="8.6143991" lon="-71.6821985">
+    <ele>78</ele>
+    <time>2026-08-26T12:01:00Z</time>
+    <name>Sandra Carrascal</name>
+    <type>Rutero</type>
+    <extensions>
+      <osmand:address>Sandra Carrascal</osmand:address>
+      <osmand:hidden>true</osmand:hidden>
+    </extensions>
+  </wpt>
+  <wpt lat="8.6417081" lon="-71.6673458">
+    <ele>71</ele>
+    <time>2026-08-26T12:03:15Z</time>
+    <name>Vigía Sport Club</name>
+    <type>Rutero</type>
+    <extensions>
+      <osmand:address>Vigía Sport Club</osmand:address>
+      <osmand:hidden>true</osmand:hidden>
+    </extensions>
+  </wpt>
+  <extensions>
+    <osmand:points_groups>
+      <group name="Rutero" color="#EECC22" icon="special_star" background="circle" hidden="true" pinned="false" />
+    </osmand:points_groups>
+  </extensions>
+</gpx>

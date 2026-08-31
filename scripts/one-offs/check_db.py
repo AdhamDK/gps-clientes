@@ -1,0 +1,1 @@
+import sqlite3; con=sqlite3.connect('backend/clientes.db'); rows=list(con.execute('PRAGMA table_info(clientes)')); print('\n'.join([f'{r[1]} {r[2]} PK={r[5]}' for r in rows]))

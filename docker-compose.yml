@@ -1,0 +1,42 @@
+services:
+  osrm:
+    image: ghcr.io/project-osrm/osrm-backend:v5.27.1
+    volumes:
+      - ./osrm-data:/data
+    command: >
+      bash -c "if [ ! -f /data/venezuela-latest.osrm.mldgr ]; then
+      osrm-extract -p /opt/car.lua /data/venezuela-latest.osm.pbf &&
+      osrm-partition /data/venezuela-latest.osrm &&
+      osrm-customize /data/venezuela-latest.osrm;
+      fi &&
+      osrm-routed --algorithm=MLD /data/venezuela-latest.osrm --max-table-size 8000"
+    ports:
+      - "5000:5000"
+    restart: unless-stopped
+
+  vroom:
+    image: vroomvrp/vroom-docker:v1.13.0
+    ports:
+      - "3000:3000"
+    environment:
+      - VROOM_ROUTER=osrm
+      - VROOM_LOG=/conf
+    volumes:
+      - ./vroom/config.yml:/conf/config.yml:ro
+    depends_on:
+      - osrm
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+# OSRM necesita el PBF de Venezuela en ./osrm-data/venezuela-latest.osm.pbf
+# Descargar con: 
+#   PowerShell: Invoke-WebRequest -Uri https://download.geofabrik.de/south-america/venezuela-latest.osm.pbf -OutFile osrm-data/venezuela-latest.osm.pbf
+#   o curl: curl -L https://download.geofabrik.de/south-america/venezuela-latest.osm.pbf -o osrm-data/venezuela-latest.osm.pbf
+# Luego: docker compose up -d
+# Verificar: curl http://localhost:5000/route/v1/driving/-71.65,8.61;-71.66,8.62?overview=full
+#           curl http://localhost:3000/health
+#           curl -X POST http://localhost:3000 -H "Content-Type: application/json" -d '{"jobs":[{"id":1,"location":[-71.65,8.61]}],"vehicles":[{"id":1,"start":[-71.65,8.61],"end":[-71.65,8.61]}]}'
