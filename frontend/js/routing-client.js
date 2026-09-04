@@ -68,7 +68,7 @@ export function twoOpt(route, clientsMap) {
   return out;
 }
 
-export function nearestNeighbor(clientIds, clientsMap) {
+export function nearestNeighbor(clientIds, clientsMap, userCoords) {
   if (!Array.isArray(clientIds) || clientIds.length === 0) return [];
   // Filter out clients without valid GPS fix
   var validIds = clientIds.filter(function(id) {
@@ -84,9 +84,35 @@ export function nearestNeighbor(clientIds, clientsMap) {
   if (validIds.length === 0) return [];
   if (validIds.length === 1) return validIds.slice();
 
+  // If userCoords provided and valid, find nearest client to user as starting point
   var unvisited = new Set(validIds);
   var route = [];
-  var current = validIds[0];
+  var current;
+
+  if (userCoords && userCoords.lat != null && userCoords.lng != null &&
+      Number(userCoords.lat) !== 0 && Number(userCoords.lng) !== 0) {
+    // Find nearest valid client to userCoords
+    var minDist = Infinity;
+    var startId = null;
+    var candidates = Array.from(unvisited).sort();
+    for (var k = 0; k < candidates.length; k++) {
+      var id = candidates[k];
+      var nxt = clientsMap[id];
+      var nlat = nxt.lat != null ? nxt.lat : nxt.latitud;
+      var nlng = nxt.lng != null ? nxt.lng : nxt.longitud;
+      var d = haversine(userCoords.lat, userCoords.lng, nlat, nlng);
+      if (d < minDist - 1e-9) {
+        minDist = d;
+        startId = id;
+      } else if (Math.abs(d - minDist) < 1e-9) {
+        if (String(id) < String(startId)) startId = id;
+      }
+    }
+    current = startId || validIds[0];
+  } else {
+    current = validIds[0];
+  }
+
   route.push(current);
   unvisited.delete(current);
 

@@ -880,6 +880,15 @@ async function handleOptimizar() {
     toast('Selecciona al menos 2 clientes con GPS');
     return;
   }
+  // Read cached GPS fix and validate accuracy
+  var start = null;
+  if (cachedFix && cachedFix.lat != null && cachedFix.lng != null &&
+      cachedFix.accuracy != null && cachedFix.accuracy <= CONFIG.GPS_ACCURACY_THRESHOLD_M) {
+    start = { lat: cachedFix.lat, lng: cachedFix.lng };
+  } else if (cachedFix) {
+    // GPS fix exists but accuracy too low - warn but don't use as start
+    toast('Precisión GPS > ' + CONFIG.GPS_ACCURACY_THRESHOLD_M + 'm — ruta empieza en cliente más cercano', 3000);
+  }
   els.btnOptimizar.disabled = true;
   var prevText = els.btnOptimizar.textContent;
   els.btnOptimizar.textContent = 'Optimizando...';
@@ -888,11 +897,11 @@ async function handleOptimizar() {
     if (!navigator.onLine) { toast('Sin conexi\u00f3n \u2014 ruta en cola (BackgroundSync via sw.js)'); }
     var clientsMap = {};
     clientesCache.forEach(function(c){ clientsMap[String(c.id)] = c; });
-    var result = await optimizarRutaClient(checked, clientsMap);
+    var result = await optimizarRutaClient(checked, clientsMap, start);
     var orden = result.ordered || result.orden || checked;
     var data = { orden: orden, geometry: result.geometry, distance: result.distance, duration: result.duration };
     if (result.raw && result.raw.geometry) { data.geometry = result.raw.geometry; data.distance = result.raw.distance; data.duration = result.raw.duration; }
-    renderRuta(data, checked);
+    renderRuta(data, checked, start);
     if (result.fallback) {
       toast('Optimizaci\u00f3n local (VROOM no disponible \u2014 requiere backend local)', 4000);
       if (els.rutaStats) els.rutaStats.textContent += ' \u00b7 fallback local';
@@ -909,7 +918,7 @@ async function handleOptimizar() {
   }
 }
 
-function renderRuta(data, requestedIds) {
+function renderRuta(data, requestedIds, start) {
   const orden = data.orden || [];
   const geometry = data.geometry;
   const distance = data.distance;
@@ -930,6 +939,16 @@ function renderRuta(data, requestedIds) {
       markerCluster = L.markerClusterGroup({ maxClusterRadius: 40, showCoverageOnHover: false, spiderfyOnMaxZoom: true, spiderfyDistanceMultiplier: 1.2, disableClusteringAtZoom: 18, iconCreateFunction: createClusterIcon });
     }
     const bounds = [];
+    
+    // Prepend "Mi ubicación" display pin if start provided
+    if (start && start.lat != null && start.lng != null) {
+      const myLocMarker = L.marker([start.lat, start.lng], { icon: L.divIcon({ className: 'my-location-wrap', html: '<div class="my-location-dot"></div>', iconSize: [16, 16], iconAnchor: [8, 8] }) })
+        .bindPopup('Mi ubicación');
+      markers.push({ id: '__my_location__', marker: myLocMarker });
+      if (markerCluster) markerCluster.addLayer(myLocMarker); else myLocMarker.addTo(map);
+      bounds.push([start.lat, start.lng]);
+    }
+    
     orderedClientes.forEach((c, idx) => {
       const marker = L.marker([c.lat, c.lng], { icon: createNumberedIcon(idx + 1) })
         .bindPopup(`<b>${escapeHtml(c.nombre)}</b><br/>${escapeHtml(c.texto_breve || c.referencia || '')}<br/><small>${escapeHtml(c.zona || '')}</small>`);

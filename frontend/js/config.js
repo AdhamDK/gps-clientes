@@ -45,7 +45,22 @@ export const CONFIG = {
       return h2.includes('.netlify.app') || h2.endsWith('.netlify.app');
     } catch (e) { return false; }
   },
-  USE_LOCAL_OPTIMIZATION: true
+  USE_LOCAL_OPTIMIZATION: true,
+  GPS_ACCURACY_THRESHOLD_M: (function() {
+    try {
+      if (typeof window !== 'undefined' && window.GPS_ACCURACY_THRESHOLD_M != null) return Number(window.GPS_ACCURACY_THRESHOLD_M);
+      if (typeof document !== 'undefined') {
+        var meta = document.querySelector('meta[name="gps-accuracy-threshold"]');
+        if (meta && meta.content) return Number(meta.content);
+      }
+      if (typeof window !== 'undefined' && window.localStorage) {
+        var ls = window.localStorage.getItem('GPS_ACCURACY_THRESHOLD_M');
+        if (ls) return Number(ls);
+      }
+      if (typeof process !== 'undefined' && process.env && process.env.GPS_ACCURACY_THRESHOLD_M) return Number(process.env.GPS_ACCURACY_THRESHOLD_M);
+    } catch (e) { console.error('[GPS] CONFIG GPS_ACCURACY_THRESHOLD_M resolve', e); }
+    return 50;
+  })()
 };
 
 // Browser auto-expose for non-module usage

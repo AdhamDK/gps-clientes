@@ -78,10 +78,11 @@ async function fetchOSRMGeometry(ordered, clientsMap) {
   return null;
 }
 
-export async function optimizarRuta(clientIds, clientsMap) {
+export async function optimizarRuta(clientIds, clientsMap, start) {
   // clientsMap optional: if not provided, tries local only and falls back to ordering via nearestNeighbor without map (identity)
+  // start optional: {lat, lng} user location to use as route start (forwarded to VROOM, used by nearestNeighbor fallback)
   try {
-    var res = await localFetch('/rutas/optimizar', { cliente_ids: clientIds });
+    var res = await localFetch('/rutas/optimizar', { cliente_ids: clientIds, start: start });
     // Local returns {orden, geometry, distance, duration} or {ordered}
     if (res && res.orden) return { fallback: false, ordered: res.orden, geometry: res.geometry, distance: res.distance, duration: res.duration, raw: res };
     if (res && res.ordered) return { fallback: false, ordered: res.ordered, raw: res };
@@ -90,7 +91,7 @@ export async function optimizarRuta(clientIds, clientsMap) {
     try { console.warn('Local VROOM unavailable, trying OSRM public:', e.message || e); } catch (err2) {}
     var fallbackOrdered;
     if (clientsMap) {
-      fallbackOrdered = nearestNeighbor(clientIds, clientsMap);
+      fallbackOrdered = nearestNeighbor(clientIds, clientsMap, start);
     } else {
       fallbackOrdered = clientIds.slice();
     }
