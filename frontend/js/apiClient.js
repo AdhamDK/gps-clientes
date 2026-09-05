@@ -45,14 +45,20 @@ export async function localFetch(endpoint, payload, method) {
   }
 }
 
-async function fetchOSRMGeometry(ordered, clientsMap) {
+async function fetchOSRMGeometry(ordered, clientsMap, start) {
   if (!ordered || ordered.length < 2 || !clientsMap) return null;
-  var coords = ordered.map(function(id){
+  var coords = [];
+  // Prepend user location if provided (start = {lat, lng})
+  if (start && start.lat != null && start.lng != null) {
+    coords.push(start.lng + ',' + start.lat);
+  }
+  ordered.forEach(function(id){
     var c = clientsMap[id];
     var lat = c.lat != null ? c.lat : c.latitud;
     var lng = c.lng != null ? c.lng : c.longitud;
-    return lng + ',' + lat;
-  }).join(';');
+    coords.push(lng + ',' + lat);
+  });
+  coords = coords.join(';');
   var endpoints = [
     'https://router.project-osrm.org/route/v1/driving/' + coords + '?overview=full&geometries=geojson',
     'https://routing.openstreetmap.de/routed-car/route/v1/driving/' + coords + '?overview=full&geometries=geojson'
@@ -96,7 +102,7 @@ export async function optimizarRuta(clientIds, clientsMap, start) {
       fallbackOrdered = clientIds.slice();
     }
     // Try OSRM public for road-following geometry (restores v1.1.7 look on Netlify)
-    var osrm = await fetchOSRMGeometry(fallbackOrdered, clientsMap);
+    var osrm = await fetchOSRMGeometry(fallbackOrdered, clientsMap, start);
     if (osrm && osrm.geometry) {
       return { fallback: false, ordered: fallbackOrdered, geometry: osrm.geometry, distance: osrm.distance, duration: osrm.duration, raw: osrm };
     }
